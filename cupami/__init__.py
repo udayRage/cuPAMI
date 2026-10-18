@@ -1,3 +1,6 @@
-from .extras.syntheticDatabaseGenerator import createSyntheticTransaction, createSyntheticTemporal
+"""CUDA pattern-mining utilities."""
 
-__all__ = ["createSyntheticTransaction", "createSyntheticTemporal"]
+from .extras.syntheticDatabaseGenerator import createSyntheticTransaction, createSyntheticTemporal
+from .frequentPattern import cuApriori
+
+__all__ = ["createSyntheticTransaction", "createSyntheticTemporal", "cuApriori"]
