@@ -3,7 +3,7 @@
 # Algorithm: Agrawal and Srikant, "Fast Algorithms for Mining Association
 # Rules," VLDB 1994, pp. 487-499, Section 2.1.
 # https://www.vldb.org/conf/1994/P487.PDF
-# CUDA adaptations and GDS API provenance: docs/references.md.
+# CUDA adaptations and GDS API provenance: README.md#references.
 #
 # Example:
 #
@@ -185,7 +185,7 @@ class cuApriori:
         return True
 
     def _tryBinaryDeviceRead(self, path, count, total, universe):
-        """Use NVIDIA cuFile through RAPIDS KvikIO; see docs/references.md.
+        """Use NVIDIA cuFile through RAPIDS KvikIO; see README.md#references.
 
         This is local API integration, not a GDS algorithm from the Apriori paper.
         """
@@ -322,14 +322,14 @@ class cuApriori:
         try:
             import cupy as cp
         except ImportError as error:
-            raise ImportError("cuApriori requires CuPy and a CUDA device") from error
+            raise ImportError("GPU mining requires CuPy and a CUDA device.") from error
 
         try:
             deviceCount = cp.cuda.runtime.getDeviceCount()
         except cp.cuda.runtime.CUDARuntimeError as error:
-            raise RuntimeError("cuApriori could not access CUDA") from error
+            raise RuntimeError("GPU mining could not access CUDA.") from error
         if deviceCount == 0:
-            raise RuntimeError("cuApriori requires a CUDA device; none were found")
+            raise RuntimeError("GPU mining requires CuPy and a CUDA device; no CUDA device was found.")
         return cp
 
     def _generateCandidates(self, previousLevel):

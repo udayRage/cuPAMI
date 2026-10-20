@@ -5,7 +5,7 @@ without Candidate Generation," SIGMOD 2000, pp. 1-12.
 https://doi.org/10.1145/342009.335372
 Algorithms 1 and 2 define tree construction and FP-growth; Lemma 3.2 gives
 the single-path optimization. This is a local GPU adaptation, not the
-authors' source code. See docs/references.md.
+authors' source code. See README.md#references.
 """
 
 from itertools import combinations

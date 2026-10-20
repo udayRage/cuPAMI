@@ -1,7 +1,7 @@
-from .createSyntheticTransactional import syntheticTransactional
+from .TransactionalDatabase import TransactionalDatabase
 
 
-class syntheticTemporal(syntheticTransactional):
+class TemporalDatabase(TransactionalDatabase):
     def __init__(
         self,
         transactions,
@@ -11,26 +11,26 @@ class syntheticTemporal(syntheticTransactional):
         seed=None,
         *,
         timestampStep=1,
-        duplicateTimestampProbability=0.0,
-        mergeDuplicateTimestamps=False,
+        repeatChance=0.0,
+        mergeTimestamps=False,
     ):
         if isinstance(timestampStep, bool) or not isinstance(timestampStep, int):
             raise TypeError("timestampStep must be an integer")
         if timestampStep < 1:
             raise ValueError("timestampStep must be at least 1")
-        if isinstance(duplicateTimestampProbability, bool) or not isinstance(
-            duplicateTimestampProbability, (int, float)
+        if isinstance(repeatChance, bool) or not isinstance(
+            repeatChance, (int, float)
         ):
-            raise TypeError("duplicateTimestampProbability must be a number")
-        if not 0 <= duplicateTimestampProbability <= 1:
-            raise ValueError("duplicateTimestampProbability must be between 0 and 1")
-        if not isinstance(mergeDuplicateTimestamps, bool):
-            raise TypeError("mergeDuplicateTimestamps must be a boolean")
+            raise TypeError("repeatChance must be a number")
+        if not 0 <= repeatChance <= 1:
+            raise ValueError("repeatChance must be between 0 and 1")
+        if not isinstance(mergeTimestamps, bool):
+            raise TypeError("mergeTimestamps must be a boolean")
 
         super().__init__(transactions, items, min_length, max_length, seed)
         self.timestampStep = timestampStep
-        self.duplicateTimestampProbability = duplicateTimestampProbability
-        self.mergeDuplicateTimestamps = mergeDuplicateTimestamps
+        self.repeatChance = repeatChance
+        self.mergeTimestamps = mergeTimestamps
 
     def _generateTransactions(self):
         timestamp = 1
@@ -39,12 +39,12 @@ class syntheticTemporal(syntheticTransactional):
 
         for index, transaction in enumerate(super()._generateTransactions()):
             if index and not (
-                self.duplicateTimestampProbability
-                and self._random.random() < self.duplicateTimestampProbability
+                self.repeatChance
+                and self._random.random() < self.repeatChance
             ):
                 timestamp += self.timestampStep
 
-            if not self.mergeDuplicateTimestamps:
+            if not self.mergeTimestamps:
                 yield [timestamp, *transaction]
                 continue
 
@@ -67,7 +67,3 @@ class syntheticTemporal(syntheticTransactional):
         if Path(outputFile).suffix.lower() in (".bin", ".parquet"):
             raise ValueError("BIN and Parquet export currently support transactional data only")
         super()._writeDatabase(outputFile, transactions)
-
-
-# Keep existing imports working.
-createSyntheticTemporal = syntheticTemporal

@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from cupami import createSyntheticTransaction, cuApriori
+from cupami import TransactionalDatabase, cuApriori
 
 
 def expected_patterns(rows, threshold):
@@ -29,7 +29,7 @@ class TransactionFormatsTest(unittest.TestCase):
             cuApriori._getCudaModule()
         except (ImportError, RuntimeError) as error:
             self.skipTest(str(error))
-        generator = createSyntheticTransaction(
+        generator = TransactionalDatabase(
             10000, 50, min_length=2, max_length=10, seed=42
         )
         generator.create()
@@ -56,7 +56,7 @@ class TransactionFormatsTest(unittest.TestCase):
             self.skipTest(str(error))
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "transactions.bin"
-            generator = createSyntheticTransaction(10, 8, seed=42)
+            generator = TransactionalDatabase(10, 8, seed=42)
             generator.create()
             generator.save(path)
             with patch.object(driver, "get", return_value=False):
@@ -83,7 +83,7 @@ class TransactionFormatsTest(unittest.TestCase):
             for count in (0, 1, 100):
                 with self.subTest(count=count):
                     path = Path(folder) / "transactions.bin"
-                    generator = createSyntheticTransaction(count, 12, seed=42)
+                    generator = TransactionalDatabase(count, 12, seed=42)
                     generator.create()
                     generator.save(path)
                     baseline = cuApriori(path, 0.2, use_gds=False)
@@ -101,7 +101,7 @@ class TransactionFormatsTest(unittest.TestCase):
         except (ImportError, RuntimeError) as error:
             self.skipTest(str(error))
         with tempfile.TemporaryDirectory() as folder:
-            generator = createSyntheticTransaction(
+            generator = TransactionalDatabase(
                 100, 8, min_length=1, max_length=5, seed=42
             )
             generator.create()
@@ -121,7 +121,7 @@ class TransactionFormatsTest(unittest.TestCase):
             self.skipTest(str(error))
         for count in (0, 1, 100):
             with self.subTest(count=count), tempfile.TemporaryDirectory() as folder:
-                generator = createSyntheticTransaction(
+                generator = TransactionalDatabase(
                     count, 8, min_length=1, max_length=5, seed=42
                 )
                 generator.create()
@@ -153,7 +153,7 @@ class TransactionFormatsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             # Straddle bitset word boundaries and require multiple mining levels.
             for count in (0, 1, 31, 32, 33, 65):
-                generator = createSyntheticTransaction(count, 8, max_length=5, seed=42)
+                generator = TransactionalDatabase(count, 8, max_length=5, seed=42)
                 generator.create()
                 threshold = max(1, count // 8)
                 expected = expected_patterns(generator.getTransactions(), threshold)

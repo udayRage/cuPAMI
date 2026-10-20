@@ -8,7 +8,7 @@ IEEE TKDE 12(3), 2000, pp. 372-390. doi:10.1109/69.846291.
 
 This is a local CUDA/bitset adaptation, not the authors' published C++ code.
 It batches pair preprocessing, then intersects retained vertical tidsets in
-depth-first prefix classes. See docs/references.md for implementation sources.
+depth-first prefix classes. See README.md#references for implementation sources.
 """
 
 from itertools import combinations, islice

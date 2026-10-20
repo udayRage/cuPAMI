@@ -29,7 +29,7 @@ def _convertTransactional(source, outputFile, sep=None):
     Parquet requires PyArrow. The database is retained in CPU memory.
     """
     from cupami.frequentPattern import cuApriori
-    from .syntheticDatabaseGenerator import createSyntheticTransaction
+    from .syntheticDataGenerator import TransactionalDatabase
 
     suffix = Path(outputFile).suffix.lower()
     if suffix not in (".csv", ".bin", ".parquet", ".txt", ".dat", ""):
@@ -56,7 +56,7 @@ def _convertTransactional(source, outputFile, sep=None):
         transactions.append(transaction)
 
     # Reuse the generator's format writer so the schemas cannot drift.
-    writer = createSyntheticTransaction(len(transactions), max(1, universe))
+    writer = TransactionalDatabase(len(transactions), max(1, universe))
     writer._writeDatabase(outputFile, iter(transactions))
     return {"transactions": len(transactions), "item_occurrences": occurrences,
             "max_item_id": universe if transactions else None,

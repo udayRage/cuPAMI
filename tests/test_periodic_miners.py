@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from cupami import cuPFApriori, cuPFEclat, cuPFGrowth, createSyntheticTemporal
+from cupami import cuPFApriori, cuPFEclat, cuPFGrowth, TemporalDatabase
 
 MINERS = (cuPFApriori, cuPFEclat, cuPFGrowth)
 
@@ -72,8 +72,8 @@ class PeriodicMinersTest(unittest.TestCase):
 
     def test_generator_csv_exports(self):
         with tempfile.TemporaryDirectory() as directory:
-            generator = createSyntheticTemporal(50, 5, 1, 4, seed=42, timestampStep=2,
-                                               duplicateTimestampProbability=.3)
+            generator = TemporalDatabase(50, 5, 1, 4, seed=42, timestampStep=2,
+                                               repeatChance=.3)
             generator.create()
             path = Path(directory) / 'temporal.csv'
             generator.save(path)

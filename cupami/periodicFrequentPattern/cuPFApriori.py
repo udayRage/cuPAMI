@@ -1,4 +1,4 @@
-"""Local CUDA Apriori adaptation with periodicity pruning; see references.md."""
+"""Local CUDA Apriori adaptation with periodicity pruning; see README.md#references."""
 import time
 from ._temporal import TemporalInput
 

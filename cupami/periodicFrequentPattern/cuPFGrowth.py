@@ -1,7 +1,7 @@
 """Local FP-tree search augmented with GPU temporal occurrence bitsets.
 
 Based on Han et al.'s FP-growth search, with GPU periodicity checks.
-See docs/references.md for sources.
+See README.md#references for sources.
 """
 import time
 from ._temporal import TemporalInput
