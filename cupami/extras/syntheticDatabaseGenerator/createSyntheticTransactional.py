@@ -7,7 +7,7 @@ from itertools import islice
 from pathlib import Path
 
 
-class createSyntheticTransaction:
+class syntheticTransactional:
     def __init__(self, transactions, items, min_length=1, max_length=None, seed=None):
         if transactions < 0:
             raise ValueError("transactions must be non-negative")
@@ -29,7 +29,9 @@ class createSyntheticTransaction:
         self._database = None
 
     def create(self):
+        """Generate and return transactions ready to pass to a miner."""
         self._database = list(self._generateTransactions())
+        return self.getTransactions()
 
     def getTransactions(self):
         if self._database is None:
@@ -104,3 +106,8 @@ class createSyntheticTransaction:
                     [pa.array(batch, type=schema.field("items").type)], schema=schema
                 )
                 writer.write_table(table)
+
+
+# Keep existing imports working.
+createSyntheticTransaction = syntheticTransactional
+TransactionalGenerator = syntheticTransactional

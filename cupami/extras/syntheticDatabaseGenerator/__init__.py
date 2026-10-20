@@ -1,4 +1,9 @@
-from .createSyntheticTransactional import createSyntheticTransaction
-from .createSyntheticTemporal import createSyntheticTemporal
+from .createSyntheticTransactional import (
+    syntheticTransactional, createSyntheticTransaction, TransactionalGenerator,
+)
+from .createSyntheticTemporal import syntheticTemporal, createSyntheticTemporal
 
-__all__ = ["createSyntheticTransaction", "createSyntheticTemporal"]
+__all__ = [
+    "syntheticTransactional", "syntheticTemporal",
+    "createSyntheticTransaction", "createSyntheticTemporal", "TransactionalGenerator",
+]

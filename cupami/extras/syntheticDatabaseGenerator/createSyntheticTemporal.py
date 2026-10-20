@@ -1,7 +1,7 @@
-from .createSyntheticTransactional import createSyntheticTransaction
+from .createSyntheticTransactional import syntheticTransactional
 
 
-class createSyntheticTemporal(createSyntheticTransaction):
+class syntheticTemporal(syntheticTransactional):
     def __init__(
         self,
         transactions,
@@ -67,3 +67,7 @@ class createSyntheticTemporal(createSyntheticTransaction):
         if Path(outputFile).suffix.lower() in (".bin", ".parquet"):
             raise ValueError("BIN and Parquet export currently support transactional data only")
         super()._writeDatabase(outputFile, transactions)
+
+
+# Keep existing imports working.
+createSyntheticTemporal = syntheticTemporal
