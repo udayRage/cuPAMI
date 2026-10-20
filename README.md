@@ -4,6 +4,18 @@
 cuPAMI is its CUDA version, focused on mining patterns using NVIDIA GPUs.
 This repository is under development.
 
+## Inputs and outputs
+
+![Inputs and outputs of cuPAMI algorithms](docs/figures/algorithm-io.svg)
+
+[LaTeX source](docs/figures/algorithm-io.tex)
+
+## GPU loading and mining
+
+![cuPAMI storage-to-GPU loading paths and mining pipeline](docs/figures/gpu-pipeline.svg)
+
+[LaTeX source](docs/figures/gpu-pipeline.tex) · [Loading formats and GDS details](docs/transaction-formats.md#gpu-loading-and-mining)
+
 ## Quick start
 
 ```python
@@ -14,7 +26,6 @@ data = cuPAMI.TransactionalDatabase(
     items=50,
     min_length=2,
     max_length=10,
-    seed=42,
 ).create()
 
 miner = cuPAMI.cuApriori(data, minSup=0.01)
@@ -49,7 +60,6 @@ data = cuPAMI.TemporalDatabase(
     items=50,
     min_length=2,
     max_length=10,
-    seed=42,
 ).create()
 
 miner = cuPAMI.cuPFEclat(data, minSup=0.02, maxPer=100)
@@ -77,7 +87,6 @@ generator = cuPAMI.TransactionalDatabase(
     items=50,
     min_length=2,
     max_length=10,
-    seed=42,
 )
 data = generator.create()
 generator.save("transactions.csv")
