@@ -1,5 +1,9 @@
 # cuApriori finds frequent patterns in transactional databases using CUDA.
 # Apriori uses the downward closure property to prune candidate patterns.
+# Algorithm: Agrawal and Srikant, "Fast Algorithms for Mining Association
+# Rules," VLDB 1994, pp. 487-499, Section 2.1.
+# https://www.vldb.org/conf/1994/P487.PDF
+# CUDA adaptations and GDS API provenance: docs/references.md.
 #
 # Example:
 #
@@ -181,7 +185,10 @@ class cuApriori:
         return True
 
     def _tryBinaryDeviceRead(self, path, count, total, universe):
-        """Keep BIN arrays on the GPU when cuFile reports GDS availability."""
+        """Use NVIDIA cuFile through RAPIDS KvikIO; see docs/references.md.
+
+        This is local API integration, not a GDS algorithm from the Apriori paper.
+        """
         if self.use_gds is False:
             self._inputBackend = {"backend": "cpu", "reason": "GDS disabled"}
             return False
