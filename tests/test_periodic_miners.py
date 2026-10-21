@@ -100,8 +100,11 @@ class PeriodicMinersTest(unittest.TestCase):
                     cls([[1, 'a']], support, period)
             with self.assertRaises(ValueError):
                 cls([[5, 'a']], 1, 2, endTime=3)
-            with self.assertRaises(ValueError):
-                cls('transactional.bin', 1, 2)
+            with tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / 'transactional.bin'
+                path.write_bytes(b'CUPAMI01' + bytes(24))
+                with self.assertRaises(ValueError):
+                    cls(path, 1, 2)
 
 
 if __name__ == '__main__':

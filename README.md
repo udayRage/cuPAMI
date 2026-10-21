@@ -4,16 +4,6 @@
 cuPAMI is its CUDA version, focused on mining patterns using NVIDIA GPUs.
 This repository is under development.
 
-## Inputs and outputs
-
-![Inputs and outputs of cuPAMI algorithms](docs/figures/algorithm-io.svg)
-
-## GPU loading and mining
-
-![cuPAMI storage-to-GPU loading paths and mining pipeline](docs/figures/gpu-pipeline.svg)
-
-[Loading formats and GDS details](docs/transaction-formats.md#gpu-loading-and-mining)
-
 ## Quick start
 
 ```python
@@ -37,6 +27,16 @@ This generates 10000 transactions and finds patterns appearing in at least
 Replace `cuApriori` with `cuEclat` or `cuFPGrowth` to use another algorithm.
 See [quickstart.ipynb](quickstart.ipynb) for a runnable example of all three.
 Mining requires CuPy and a CUDA GPU.
+
+## Inputs and outputs
+
+![Inputs and outputs of cuPAMI algorithms](docs/figures/algorithm-io.svg)
+
+## GPU loading and mining
+
+![cuPAMI storage-to-GPU loading paths and mining pipeline](docs/figures/gpu-pipeline.svg)
+
+[Loading formats and GDS details](docs/transaction-formats.md#gpu-loading-and-mining)
 
 ## Algorithms
 
@@ -67,10 +67,13 @@ patterns = miner.getPatterns()
 
 `maxPer=100` allows a maximum gap of 100 timestamp units, including the start
 and end gaps. Temporal input rows have a timestamp followed by their items.
+Use `repeatChance=0.2` to allow repeated timestamps and `mergeTimestamps=True`
+to combine rows sharing a timestamp. See the [notebook examples](quickstart.ipynb).
 
 ## Files are optional
 
-Transactional miners also accept CSV, BIN, and Parquet files:
+Both transactional and temporal miners accept CSV, BIN, and Parquet files.
+Use a file containing the matching type of data:
 
 ```python
 miner = cuPAMI.cuEclat("transactions.bin", minSup=0.01)
@@ -92,8 +95,8 @@ generator.save("transactions.bin")
 generator.save("transactions.parquet")
 ```
 
-Parquet export requires PyArrow. Temporal files currently support timestamp-first
-CSV/text. See [data formats and GPU loading](docs/transaction-formats.md)
+Parquet export and temporal Parquet input require PyArrow.
+`TemporalDatabase` also supports all three export formats. See [data formats and GPU loading](docs/transaction-formats.md)
 for input details and optional GDS support.
 
 ## Convert a dataset
@@ -101,61 +104,23 @@ for input details and optional GDS support.
 ```python
 cuPAMI.convertFile("transactions.csv", "transactions.bin")
 cuPAMI.convertFile("transactions.csv", "transactions.parquet")
+
+cuPAMI.convertFile("temporal.csv", "temporal.bin", dataType="temporal")
 ```
 
-## Enable GPUDirect Storage (GDS)
+## GPUDirect Storage (GDS)
 
-For large Binary datasets on a compatible system, we recommend trying GDS
-when file loading is a bottleneck. It can reduce CPU staging and transfer
-overhead; benchmark total loading and mining time against standard loading.
-GDS does not make the mining kernels faster or increase GPU memory capacity.
-See NVIDIA's [GDS overview](https://docs.nvidia.com/gpudirect-storage/overview-guide/)
-and [performance guidance](https://docs.nvidia.com/gpudirect-storage/best-practices-guide/).
+On a system configured for GDS, install compatible CuPy and KvikIO packages
+and keep the BIN dataset on supported storage. Then enable GDS:
 
-1. **Prepare the system.** On Linux, install compatible NVIDIA drivers, CUDA,
-   and the GDS/cuFile components for your GPU and filesystem using NVIDIA's
-   [installation guide](https://docs.nvidia.com/gpudirect-storage/troubleshooting-guide/index.html).
-   Install CuPy and [KvikIO](https://docs.nvidia.com/kvikio/latest/)
-   versions compatible with your CUDA environment. Keep the dataset on a
-   supported storage mount, such as a suitably configured NVMe filesystem;
-   an NVMe drive alone does not guarantee GDS support.
-2. **Check GDS support.** Run the platform checker from your CUDA installation
-   (adjust the path if CUDA is installed elsewhere):
+```python
+miner = cuPAMI.cuApriori("transactions.bin", minSup=0.01, use_gds=True)
+miner.mine()
+```
 
-   ```bash
-   /usr/local/cuda/gds/tools/gdscheck.py -p
-   ```
-
-   Check the actual dataset mount as well, following NVIDIA's installation
-   guide. Platform support alone does not establish that a file uses direct I/O.
-3. **Load a Binary dataset through GDS.** Convert an existing transactional
-   dataset once, then use the resulting file:
-
-   ```python
-   import cupami as cuPAMI
-
-   cuPAMI.convertFile("transactions.csv", "transactions.bin")
-   miner = cuPAMI.cuApriori(
-       "transactions.bin", minSup=0.01, use_gds=True
-   )
-   print(miner.getInputBackend())
-   miner.mine()
-   patterns = miner.getPatterns()
-   ```
-
-`use_gds=True` requires the cuFile path and raises an error if it is unavailable.
-The default, `use_gds="auto"`, falls back to standard loading. To compare with
-bulk CPU reads and GPU transfers, use `use_gds=False`. These options also apply
-to `cuEclat` and `cuFPGrowth`. The current loader holds the Binary file and mining
-structures in GPU memory; GDS is not an out-of-core mining mode.
-
-A reported `backend="cufile"` identifies the API used, not proof of direct
-storage-to-GPU transfer: cuFile may still use compatibility I/O. For strict
-verification, use a separate cuFile configuration with
-`properties.allow_compat_mode=false` and `use_gds=True`, as described in
-[verification and fallback details](docs/transaction-formats.md#optional-gds-input).
-This explicit GDS route supports local transactional Binary files; temporal
-GDS input is not currently supported.
+This also works with `cuEclat` and `cuFPGrowth`. The default `use_gds="auto"`
+falls back when GDS is unavailable. Temporal file loading currently uses the CPU.
+See [GDS setup and verification](docs/transaction-formats.md#optional-gds-input).
 
 ## References
 

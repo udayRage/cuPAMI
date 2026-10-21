@@ -6,12 +6,12 @@ from pathlib import Path
 def convertFile(source, outputFile, dataType="transactional", sep=None):
     """Select database semantics by dataType and storage format by extension.
 
-    Currently supported data types: transactional. Each future type adds a
+    Supported data types: transactional and temporal. Each future type adds a
     handler here, keeping the same public interface for callers.
     """
-    handlers = {"transactional": _convertTransactional}
+    handlers = {"transactional": _convertTransactional, "temporal": _convertTemporal}
     if not isinstance(dataType, str) or dataType.lower() not in handlers:
-        raise ValueError(f"Unsupported data type {dataType!r}; supported: transactional")
+        raise ValueError(f"Unsupported data type {dataType!r}; supported: transactional, temporal")
     return handlers[dataType.lower()](source, outputFile, sep=sep)
 
 
@@ -60,4 +60,36 @@ def _convertTransactional(source, outputFile, sep=None):
     writer._writeDatabase(outputFile, iter(transactions))
     return {"transactions": len(transactions), "item_occurrences": occurrences,
             "max_item_id": universe if transactions else None,
+            "format": suffix.lstrip(".") if suffix in (".bin", ".parquet") else "csv"}
+
+
+def _convertTemporal(source, outputFile, sep=None):
+    """Convert temporal files while preserving timestamps and separate rows."""
+    from ..periodicFrequentPattern._temporal import TemporalInput
+    from .syntheticDataGenerator import TemporalDatabase
+
+    suffix = Path(outputFile).suffix.lower()
+    if suffix not in (".csv", ".bin", ".parquet", ".txt", ".dat", ""):
+        raise ValueError("Use a .csv, .bin, or .parquet output file")
+    reader = TemporalInput(source, minSup=1, maxPer=0, sep=sep)
+    rows = []
+    universe = occurrences = 0
+    for row_index, (timestamp, basket) in enumerate(zip(reader._timestamps, reader._Database), start=1):
+        items = []
+        for label in basket:
+            try:
+                item = int(label)
+            except ValueError as error:
+                raise ValueError(f"Transaction {row_index}: item {label!r} is not an integer ID") from error
+            if not 0 <= item <= 0xFFFFFFFF:
+                raise ValueError(f"Transaction {row_index}: item IDs must be in 0..2**32-1")
+            if item not in items:
+                items.append(item)
+        universe = max(universe, max(items, default=0))
+        occurrences += len(items)
+        rows.append([timestamp, *items])
+    writer = TemporalDatabase(transactions=len(rows), items=max(1, universe))
+    writer._writeDatabase(outputFile, iter(rows))
+    return {"transactions": len(rows), "item_occurrences": occurrences,
+            "max_item_id": universe if occurrences else None,
             "format": suffix.lstrip(".") if suffix in (".bin", ".parquet") else "csv"}

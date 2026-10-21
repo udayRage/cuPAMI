@@ -64,6 +64,12 @@ class TemporalDatabase(TransactionalDatabase):
     def _writeDatabase(self, outputFile, transactions):
         from pathlib import Path
 
-        if Path(outputFile).suffix.lower() in (".bin", ".parquet"):
-            raise ValueError("BIN and Parquet export currently support transactional data only")
-        super()._writeDatabase(outputFile, transactions)
+        from .. import _temporal_io
+
+        suffix = Path(outputFile).suffix.lower()
+        if suffix == ".bin":
+            _temporal_io.write_binary(outputFile, transactions, self.items)
+        elif suffix == ".parquet":
+            _temporal_io.write_parquet(outputFile, transactions, self.items)
+        else:
+            super()._writeDatabase(outputFile, transactions)

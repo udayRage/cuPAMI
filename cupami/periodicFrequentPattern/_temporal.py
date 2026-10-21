@@ -57,7 +57,7 @@ def _kernel(device):
 
 
 class TemporalInput(cuApriori):
-    """Timestamp-first CSV/text or iterable, with integer timestamp units.
+    """Timestamp-first CSV, temporal BIN/Parquet, or iterable input.
 
     Equal timestamps remain separate transactions; duplicate items within a
     basket count once. Empty baskets retain their timestamp and count in the
@@ -91,9 +91,16 @@ class TemporalInput(cuApriori):
 
     def _readTransactions(self, source):
         if isinstance(source, (str, Path)):
-            if Path(str(source)).suffix.lower() in ('.bin', '.parquet'):
-                raise ValueError('Temporal input currently supports timestamp-first CSV/text, not transactional BIN/Parquet')
-            if urlparse(str(source)).scheme in ('http', 'https'):
+            suffix = Path(str(source)).suffix.lower()
+            is_url = urlparse(str(source)).scheme in ('http', 'https')
+            if suffix in ('.bin', '.parquet'):
+                if is_url:
+                    raise ValueError('Temporal BIN and Parquet input requires a local file')
+                from ..extras import _temporal_io
+                rows = (_temporal_io.read_binary(source) if suffix == '.bin'
+                        else _temporal_io.read_parquet(source))
+                return self._cleanTemporalRows(rows)
+            if is_url:
                 with urlopen(str(source), timeout=30) as response:
                     text = response.read().decode('utf-8-sig')
             else:
@@ -105,6 +112,9 @@ class TemporalInput(cuApriori):
             rows = csv.reader(io.StringIO(text), delimiter=separator) if separator else (line.split() for line in text.splitlines())
         else:
             rows = source
+        return self._cleanTemporalRows(rows)
+
+    def _cleanTemporalRows(self, rows):
         records = []
         for row in rows:
             row = list(row)
@@ -117,7 +127,7 @@ class TemporalInput(cuApriori):
         self._endTimestamp = last if self.endTime is None else self._timestamp(self.endTime)
         if self._endTimestamp < last:
             raise ValueError('endTime must be at least the last timestamp')
-        self._inputBackend = {'backend': 'cpu', 'reason': 'Timestamp-first temporal reader; mining uses CUDA'}
+        self._inputBackend = {'backend': 'cpu', 'reason': 'Temporal reader; mining uses CUDA'}
         return [record[1] for record in records]
 
     def _prepare(self, cp):

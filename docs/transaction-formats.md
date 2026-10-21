@@ -23,11 +23,13 @@ The converter accepts local CSV/BIN/Parquet files, text URLs, or transaction
 iterables. It uses the same readers and writers as cuApriori and the generator.
 The shared entry point lives in `cupami/extras/fileConverter.py`; `dataType`
 selects the database layout and the output extension selects the storage format.
-Only `transactional` is implemented currently. New database types can add their
-own handlers behind this interface. `convertTransactions` remains a shorthand.
+`dataType="transactional"` is the default; use `dataType="temporal"` for
+timestamped data. `convertTransactions` remains a transactional shorthand.
 It requires no GPU and retains the database in CPU memory. Parquet requires
 PyArrow. Item IDs must be nonnegative uint32 integers (zero is preserved); conversion normalizes their
-numeric spelling, removes duplicate IDs within a basket, and omits empty baskets.
+numeric spelling and removes duplicate IDs within a basket. Transactional
+conversion omits empty baskets; temporal conversion preserves them and retains
+separate rows with repeated timestamps, sorted by timestamp.
 CSV output uses commas. The returned dictionary reports transaction and item
 occurrence counts. The existing dataset is converted; no new data is generated.
 
@@ -104,9 +106,38 @@ their timestamp. Periodicity includes gaps from 0 to the first occurrence
 and from the last occurrence to the largest input timestamp. Set `endTime`
 to extend the observation window.
 
-Temporal miners accept iterable rows, timestamp-first CSV/text, and text URLs.
-Parsing uses the CPU; mining uses CUDA. Temporal BIN/Parquet and GDS are
-not currently supported.
+Temporal miners accept iterable rows, timestamp-first CSV/text, temporal BIN,
+temporal Parquet, and text URLs. Local file formats are selected by extension.
+File parsing uses the CPU and mining uses CUDA; temporal GDS is not implemented.
+BIN and Parquet preserve repeated timestamps and empty baskets.
+
+Keep the generator to export the same data:
+
+```python
+generator = cuPAMI.TemporalDatabase(
+    transactions=10000,
+    items=50,
+    min_length=2,
+    max_length=10,
+    repeatChance=0.2,
+    mergeTimestamps=False,
+)
+data = generator.create()
+generator.save("temporal.csv")
+generator.save("temporal.bin")
+generator.save("temporal.parquet")
+
+miner = cuPAMI.cuPFEclat("temporal.bin", minSup=0.02, maxPer=100)
+miner.mine()
+```
+
+The same files work with `cuPFApriori` and `cuPFGrowth`.
+To convert an existing timestamp-first dataset:
+
+```python
+cuPAMI.convertFile("temporal.csv", "temporal.bin", dataType="temporal")
+cuPAMI.convertFile("temporal.bin", "temporal.parquet", dataType="temporal")
+```
 
 ## CSV
 
@@ -120,7 +151,7 @@ UTF-8, no header, one transaction per row, comma separated integer item IDs. Row
 
 The existing `.txt`, `.dat`, and extensionless exports also retain this CSV layout.
 
-## BIN format, version 1
+## Transactional BIN format, version 1
 
 This is a cuPAMI format, not a universal `.bin` standard or IBM's binary format. All integers are unsigned and little endian. There is no padding or compression.
 
@@ -145,7 +176,7 @@ Items   = [2, 5, 9, 1, 5, 2, 9]
 
 Contiguous offsets and item arrays avoid padding variable length baskets. This is the storage representation; mining algorithms may convert it to another GPU representation. Loading performance depends on the dataset, reader, and storage device.
 
-## Parquet
+## Transactional Parquet
 
 One row per transaction. The only column is `items`, a non-null list of non-null uint32 item IDs. Lists are stored as native Parquet lists, not strings such as `"[2,5,9]"`. Files use Snappy compression. Direct generation writes batches of up to 8,192 transactions.
 
@@ -154,9 +185,39 @@ import pyarrow.parquet as pq
 transactions = pq.read_table("transactions.parquet")["items"].to_pylist()
 ```
 
+## Temporal BIN format, version 1
+
+Little-endian header and arrays, with timestamps stored separately:
+
+| Byte position | Type | Meaning |
+|---|---|---|
+| 0 | 8 bytes | ASCII `CUPAMIT1` |
+| 8 | uint64 | Number of rows N |
+| 16 | uint64 | Number of item occurrences M |
+| 24 | uint64 | Upper item ID bound U |
+| 32 | int64[N] | Nonnegative timestamps |
+| 32 + 8*N | uint64[N + 1] | Basket offsets |
+| 32 + 8*N + 8*(N + 1) | uint32[M] | Item IDs |
+
+Offsets start at zero, never decrease, and end at M. IDs are in `0..U`,
+where U is at least 1 and fits uint32. The exact size is
+`32 + 8*N + 8*(N + 1) + 4*M` bytes. Equal adjacent offsets represent empty
+baskets. Duplicate timestamps are retained. Readers validate the header,
+array sizes, offsets, timestamps, and item bounds before mining.
+The distinct header prevents transactional BIN files being read as temporal data.
+
+## Temporal Parquet
+
+Two non-null columns: `timestamp: int64` and `items: list<uint32>` with
+non-null members. Timestamps are nonnegative. Empty lists and repeated timestamps
+are retained. Files use Snappy compression and generation writes batches of
+up to 8192 rows. PyArrow is required for reading and writing these files.
+
 ## Current scope
 
-These exports are for the transactional generator. The temporal generator retains CSV output, with timestamps in its first field; BIN and Parquet exports reject temporal data until their timestamp schemas are defined.
+Both generators export CSV, BIN, and Parquet. Transactional files store baskets;
+temporal files also store a timestamp per basket. Use the matching miner for
+each dataset type. Temporal Parquet requires PyArrow.
 
 `cuApriori` reads the generator's CSV, BIN, and Parquet files directly, selecting the reader by file extension (case insensitive). Parquet CPU input requires `pyarrow`; GPU input uses cuDF. Delimited text URLs and transaction iterables are also supported; URL input remains text only.
 `cuEclat` shares these readers and constructor options, including GPU loading
