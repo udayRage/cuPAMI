@@ -8,13 +8,11 @@ This repository is under development.
 
 ![Inputs and outputs of cuPAMI algorithms](docs/figures/algorithm-io.svg)
 
-[LaTeX source](docs/figures/algorithm-io.tex)
-
 ## GPU loading and mining
 
 ![cuPAMI storage-to-GPU loading paths and mining pipeline](docs/figures/gpu-pipeline.svg)
 
-[LaTeX source](docs/figures/gpu-pipeline.tex) · [Loading formats and GDS details](docs/transaction-formats.md#gpu-loading-and-mining)
+[Loading formats and GDS details](docs/transaction-formats.md#gpu-loading-and-mining)
 
 ## Quick start
 
@@ -104,6 +102,60 @@ for input details and optional GDS support.
 cuPAMI.convertFile("transactions.csv", "transactions.bin")
 cuPAMI.convertFile("transactions.csv", "transactions.parquet")
 ```
+
+## Enable GPUDirect Storage (GDS)
+
+For large Binary datasets on a compatible system, we recommend trying GDS
+when file loading is a bottleneck. It can reduce CPU staging and transfer
+overhead; benchmark total loading and mining time against standard loading.
+GDS does not make the mining kernels faster or increase GPU memory capacity.
+See NVIDIA's [GDS overview](https://docs.nvidia.com/gpudirect-storage/overview-guide/)
+and [performance guidance](https://docs.nvidia.com/gpudirect-storage/best-practices-guide/).
+
+1. **Prepare the system.** On Linux, install compatible NVIDIA drivers, CUDA,
+   and the GDS/cuFile components for your GPU and filesystem using NVIDIA's
+   [installation guide](https://docs.nvidia.com/gpudirect-storage/troubleshooting-guide/index.html).
+   Install CuPy and [KvikIO](https://docs.nvidia.com/kvikio/latest/)
+   versions compatible with your CUDA environment. Keep the dataset on a
+   supported storage mount, such as a suitably configured NVMe filesystem;
+   an NVMe drive alone does not guarantee GDS support.
+2. **Check GDS support.** Run the platform checker from your CUDA installation
+   (adjust the path if CUDA is installed elsewhere):
+
+   ```bash
+   /usr/local/cuda/gds/tools/gdscheck.py -p
+   ```
+
+   Check the actual dataset mount as well, following NVIDIA's installation
+   guide. Platform support alone does not establish that a file uses direct I/O.
+3. **Load a Binary dataset through GDS.** Convert an existing transactional
+   dataset once, then use the resulting file:
+
+   ```python
+   import cupami as cuPAMI
+
+   cuPAMI.convertFile("transactions.csv", "transactions.bin")
+   miner = cuPAMI.cuApriori(
+       "transactions.bin", minSup=0.01, use_gds=True
+   )
+   print(miner.getInputBackend())
+   miner.mine()
+   patterns = miner.getPatterns()
+   ```
+
+`use_gds=True` requires the cuFile path and raises an error if it is unavailable.
+The default, `use_gds="auto"`, falls back to standard loading. To compare with
+bulk CPU reads and GPU transfers, use `use_gds=False`. These options also apply
+to `cuEclat` and `cuFPGrowth`. The current loader holds the Binary file and mining
+structures in GPU memory; GDS is not an out-of-core mining mode.
+
+A reported `backend="cufile"` identifies the API used, not proof of direct
+storage-to-GPU transfer: cuFile may still use compatibility I/O. For strict
+verification, use a separate cuFile configuration with
+`properties.allow_compat_mode=false` and `use_gds=True`, as described in
+[verification and fallback details](docs/transaction-formats.md#optional-gds-input).
+This explicit GDS route supports local transactional Binary files; temporal
+GDS input is not currently supported.
 
 ## References
 
