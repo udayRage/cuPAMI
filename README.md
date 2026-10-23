@@ -12,8 +12,7 @@ import cupami as cuPAMI
 data = cuPAMI.TransactionalDatabase(
     transactions=10000,
     items=50,
-    min_length=2,
-    max_length=10,
+    avg_length=6,
 ).create()
 
 miner = cuPAMI.cuApriori(data, minSup=0.01)
@@ -21,7 +20,8 @@ miner.mine()
 patterns = miner.getPatterns()
 ```
 
-This generates 10000 transactions and finds patterns appearing in at least
+`avg_length=6` targets an average of six unique items per transaction; individual
+lengths vary. This generates 10000 transactions and finds patterns appearing in at least
 1% of them. Saving a dataset is optional.
 
 Replace `cuApriori` with `cuEclat` or `cuFPGrowth` to use another algorithm.
@@ -56,8 +56,7 @@ import cupami as cuPAMI
 data = cuPAMI.TemporalDatabase(
     transactions=10000,
     items=50,
-    min_length=2,
-    max_length=10,
+    avg_length=6,
 ).create()
 
 miner = cuPAMI.cuPFEclat(data, minSup=0.02, maxPer=100)
@@ -86,14 +85,27 @@ To save generated data, keep the generator:
 generator = cuPAMI.TransactionalDatabase(
     transactions=10000,
     items=50,
-    min_length=2,
-    max_length=10,
+    avg_length=6,
 )
 data = generator.create()
 generator.save("transactions.csv")
 generator.save("transactions.bin")
 generator.save("transactions.parquet")
 ```
+
+After generation, both generators expose runtime in seconds and process memory
+in bytes:
+
+```python
+print(generator.getRuntime())
+print(generator.getMemoryRSS())
+print(generator.getMemoryUSS())
+```
+
+These measure the latest `create()` or direct-to-file generation. RSS/USS are
+snapshots after generation, not peak or generator-only memory; install `psutil`
+for memory reporting (unavailable values return 0). `save()` does not reset them.
+
 
 Parquet export and temporal Parquet input require PyArrow.
 `TemporalDatabase` also supports all three export formats. See [data formats and GPU loading](docs/transaction-formats.md)

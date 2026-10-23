@@ -43,8 +43,7 @@ import cupami as cuPAMI
 generator = cuPAMI.TransactionalDatabase(
     transactions=10000,
     items=50,
-    min_length=2,
-    max_length=10,
+    avg_length=6,
     seed=42,
 )
 data = generator.create()
@@ -71,6 +70,19 @@ The file extension selects the format. Parquet export requires PyArrow;
 CSV and BIN export use the Python standard library. Each `save()` exports
 the data from the most recent `create()` call without generating new data.
 
+`avg_length` replaces `min_length` and `max_length`. It is the expected number
+of unique items per generated transaction, between 1 and `items` (fractional
+values are accepted). Lengths vary around the requested mean using a symmetric
+uniform draw and stochastic rounding. The observed average need not be exact.
+The default is `(items + 1) / 2`; endpoint averages produce fixed lengths.
+
+Both generators provide `getRuntime()` (seconds), `getMemoryRSS()` and
+`getMemoryUSS()` (bytes) for the latest `create()` or direct-to-file generation.
+Runtime includes generating the returned copy or writing the file. Memory is
+a process snapshot after generation, not a peak or allocation delta. Memory
+reporting requires `psutil`; unavailable metrics return 0. Before generation,
+all metrics are 0. Calling `save()` leaves generation metrics unchanged.
+
 Generated transactions contain sorted, unique item IDs in `1..items`. Duplicate baskets across different transactions are allowed. Zero transactions produces a valid empty file/database in each format. BIN and Parquet support item IDs up to `2**32 - 1`.
 
 ## Generate temporal data
@@ -81,8 +93,7 @@ import cupami as cuPAMI
 data = cuPAMI.TemporalDatabase(
     transactions=10000,
     items=50,
-    min_length=2,
-    max_length=10,
+    avg_length=6,
     seed=42,
 ).create()
 
@@ -95,6 +106,10 @@ Use `cuPFApriori` or `cuPFGrowth` with the same input and parameters.
 Temporal results map each pattern to `(support, periodicity)`. Integer `maxPer`
 is measured in timestamp units; a float in `(0, 1]` is a fraction of the
 observation window. Fractional `minSup` uses the number of records, rounded up.
+
+For temporal generation, `avg_length` counts items only, excluding the timestamp.
+It applies before `mergeTimestamps=True` unions baskets; merged rows can therefore
+be longer and their average can differ from the requested value.
 
 `TemporalDatabase` accepts `repeatChance` (0–1) to repeat the previous
 timestamp and `mergeTimestamps=True` to combine rows sharing a timestamp.
@@ -117,8 +132,7 @@ Keep the generator to export the same data:
 generator = cuPAMI.TemporalDatabase(
     transactions=10000,
     items=50,
-    min_length=2,
-    max_length=10,
+    avg_length=6,
     repeatChance=0.2,
     mergeTimestamps=False,
 )

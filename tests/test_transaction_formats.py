@@ -30,7 +30,7 @@ class TransactionFormatsTest(unittest.TestCase):
         except (ImportError, RuntimeError) as error:
             self.skipTest(str(error))
         generator = TransactionalDatabase(
-            10000, 50, min_length=2, max_length=10, seed=42
+            10000, 50, avg_length=6, seed=42
         )
         generator.create()
         rows = generator.getTransactions()
@@ -102,7 +102,7 @@ class TransactionFormatsTest(unittest.TestCase):
             self.skipTest(str(error))
         with tempfile.TemporaryDirectory() as folder:
             generator = TransactionalDatabase(
-                100, 8, min_length=1, max_length=5, seed=42
+                100, 8, avg_length=3, seed=42
             )
             generator.create()
             expected = expected_patterns(generator.getTransactions(), 20)
@@ -122,7 +122,7 @@ class TransactionFormatsTest(unittest.TestCase):
         for count in (0, 1, 100):
             with self.subTest(count=count), tempfile.TemporaryDirectory() as folder:
                 generator = TransactionalDatabase(
-                    count, 8, min_length=1, max_length=5, seed=42
+                    count, 8, avg_length=3, seed=42
                 )
                 generator.create()
                 rows = generator.getTransactions()
@@ -153,7 +153,7 @@ class TransactionFormatsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             # Straddle bitset word boundaries and require multiple mining levels.
             for count in (0, 1, 31, 32, 33, 65):
-                generator = TransactionalDatabase(count, 8, max_length=5, seed=42)
+                generator = TransactionalDatabase(count, 8, avg_length=3, seed=42)
                 generator.create()
                 threshold = max(1, count // 8)
                 expected = expected_patterns(generator.getTransactions(), threshold)

@@ -6,8 +6,7 @@ class TemporalDatabase(TransactionalDatabase):
         self,
         transactions,
         items,
-        min_length=1,
-        max_length=None,
+        avg_length=None,
         seed=None,
         *,
         timestampStep=1,
@@ -27,7 +26,7 @@ class TemporalDatabase(TransactionalDatabase):
         if not isinstance(mergeTimestamps, bool):
             raise TypeError("mergeTimestamps must be a boolean")
 
-        super().__init__(transactions, items, min_length, max_length, seed)
+        super().__init__(transactions, items, avg_length, seed)
         self.timestampStep = timestampStep
         self.repeatChance = repeatChance
         self.mergeTimestamps = mergeTimestamps
