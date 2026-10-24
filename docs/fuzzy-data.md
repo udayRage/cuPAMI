@@ -27,6 +27,20 @@ In this example `A.L` totals 1.1 and `A.H` totals 0.9, so `A.L` is retained.
 Pattern support sums the minimum membership per transaction. For `{A.L, B.H}`,
 support is `min(0.4, 1) + min(0.7, 0.5) = 0.9`.
 
+## Multiple fuzzy regions
+
+```python
+miner = cuPAMI.cuMFFIMiner("fuzzy.csv", minSup=0.01)
+miner.mine()
+patterns = miner.getPatterns()
+```
+
+`cuFFIMiner` keeps the strongest region per item. `cuMFFIMiner` keeps every
+frequent region. A multiple-region pattern still contains at most one region
+of each base item: `{A.L, B.H}` is allowed, while `{A.L, A.H}` is excluded.
+Both use the same parser, float64 support, bounded GPU batches, timing, and
+output methods. CSV/text files and URLs are supported by both.
+
 An integer `minSup` is absolute support. A float in `(0, 1]` is a fraction of
 the transaction count, without rounding; a larger float is absolute fuzzy
 support. Float64 reductions use threshold tolerance

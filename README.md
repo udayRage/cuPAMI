@@ -57,7 +57,7 @@ are excluded. `getRuntime()` remains the mining-time shorthand.
 |---|---|---|
 | Transactional | `cuApriori`, `cuEclat`, `cuFPGrowth` | `minSup` |
 | Temporal | `cuPFApriori`, `cuPFEclat`, `cuPFGrowth` | `minSup`, `maxPer` |
-| Fuzzy CSV | `cuFFIMiner` | `minSup` |
+| Fuzzy CSV | `cuFFIMiner`, `cuMFFIMiner` | `minSup` |
 
 Transactional results contain each pattern's support count. Temporal results
 contain `(support, periodicity)`.
@@ -97,7 +97,16 @@ patterns = miner.getPatterns()
 
 A local fuzzy CSV filename works too. Rows contain `items:memberships`.
 The miner keeps the strongest fuzzy region per base item and returns
-floating-point support. See [fuzzy input details](docs/fuzzy-data.md).
+floating-point support. Use `cuMFFIMiner` to keep all frequent regions,
+with at most one region per base item in a pattern:
+
+```python
+miner = cuPAMI.cuMFFIMiner(file, minSup=0.005)
+miner.mine()
+patterns = miner.getPatterns()
+```
+
+See [fuzzy input details](docs/fuzzy-data.md).
 
 ## Files are optional
 
@@ -175,6 +184,7 @@ See [GDS setup and verification](docs/transaction-formats.md#optional-gds-input)
 | `cuFPGrowth`, FP-tree search in `cuPFGrowth` | Han, Pei and Yin, SIGMOD 2000 [4] |
 | Periodicity definition and pruning | Kiran, Kitsuregawa and Reddy, JSS 2016 [5] |
 | `cuFFIMiner` fuzzy support and region selection | Lin, Li, Fournier-Viger and Hong, JIFS 2015 [6] |
+| `cuMFFIMiner` multiple-region support and joins | Lin et al., IJFS 2017 (online 2016) [7] |
 
 These implementations adapt the referenced algorithms for CUDA. The temporal
 miners add maximum-gap checks, including the start and end gaps.
@@ -204,6 +214,12 @@ miners add maximum-gap checks, including the start and end gaps.
    DOI: 10.3233/IFS-151936. Definitions 4–5, Strategy 1 and Algorithm 1.
    [Paper](https://www.philippe-fournier-viger.com/spmf/ffiminer.pdf).
 
+7. Jerry Chun-Wei Lin, Ting Li, Philippe Fournier-Viger, Tzung-Pei Hong,
+   Jimmy Ming-Tai Wu and Justin Zhan. **Efficient Mining of Multiple Fuzzy
+   Frequent Itemsets.** International Journal of Fuzzy Systems, 19(4), 2017,
+   pp. 1032–1040; published online in 2016. DOI: 10.1007/s40815-016-0246-1.
+   [Paper](https://www.philippe-fournier-viger.com/spmf/mffiminer.pdf).
+
 ### Code and GPU I/O credits
 
 - **CUDA bitsets and cuDF loading:** adapted from
@@ -224,3 +240,8 @@ miners add maximum-gap checks, including the start and end gaps.
   [PAMI cuFFIMiner](https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/fuzzyFrequentPattern/cuda/cuFFIMiner.py),
   GPL-3.0, Copyright (C) 2021 Rage Uday Kiran; PAMI credits the CUDA code to
   Mithun Thangaraj. cuPAMI uses float64 memberships and batched depth-first search.
+
+- **Multiple fuzzy regions:** based on
+  [PAMI cuMFFIMiner](https://github.com/UdayLab/PAMI/blob/d6d05d9f9134f6039eede0c69b463fc1c2031262/PAMI/fuzzyFrequentPattern/cuda/cuMFFIMiner.py),
+  GPL-3.0, Copyright (C) 2026 Rage Uday Kiran. cuPAMI shares its float64 GPU
+  intersections with `cuFFIMiner` and excludes joins within the same base item.

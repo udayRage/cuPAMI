@@ -117,11 +117,7 @@ class cuFFIMiner(cuApriori):
     def _frequent(self, support):
         return support > 0 and support + self._tolerance >= self._minSup
 
-    def _singletons(self, cp):
-        if not self._labels:
-            return [], None
-        columns, values = cp.asarray(self._columns), cp.asarray(self._memberships)
-        supports = singleton_supports(cp, columns, values, len(self._labels))
+    def _selectLabels(self, supports):
         best = {}
         for index in sorted(range(len(self._labels)), key=lambda i: self._labels[i]):
             base = self._labels[index].rsplit('.', 1)[0]
@@ -129,8 +125,18 @@ class cuFFIMiner(cuApriori):
             if previous is None or (supports[index] > supports[previous] and
                                     not math.isclose(supports[index], supports[previous], rel_tol=1e-12, abs_tol=1e-12)):
                 best[base] = index
-        selected = sorted((i for i in best.values() if self._frequent(supports[i])),
+        return sorted((i for i in best.values() if self._frequent(supports[i])),
                           key=lambda i: (supports[i], self._labels[i]))
+
+    def _extensionBatch(self, cp, prefix, names, memberships, start, stop):
+        return names[start:stop], memberships[start:stop]
+
+    def _singletons(self, cp):
+        if not self._labels:
+            return [], None
+        columns, values = cp.asarray(self._columns), cp.asarray(self._memberships)
+        supports = singleton_supports(cp, columns, values, len(self._labels))
+        selected = self._selectLabels(supports)
         labels = [self._labels[i] for i in selected]
         if not labels:
             return [], None
@@ -168,11 +174,14 @@ class cuFFIMiner(cuApriori):
             batch_size = max(1, self._INTERSECTION_BATCH_BYTES // max(1, 8 * self._transactionCount))
             for start in range(position + 1, len(names), batch_size):
                 stop = min(len(names), start + batch_size)
-                intersections, supports = intersect_memberships(cp, memberships[position], memberships[start:stop])
+                batch_names, extensions = self._extensionBatch(cp, child, names, memberships, start, stop)
+                if not batch_names:
+                    continue
+                intersections, supports = intersect_memberships(cp, memberships[position], extensions)
                 keep = []
                 for offset, support in enumerate(supports):
                     if self._frequent(support):
-                        label = names[start + offset]
+                        label = batch_names[offset]
                         self._finalPatterns[tuple(sorted(child + (label,)))] = float(support)
                         kept_names.append(label)
                         keep.append(offset)
