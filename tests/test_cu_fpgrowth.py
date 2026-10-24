@@ -78,6 +78,17 @@ class FPGrowthTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "positive minimum support"):
             cuFPGrowth([[1]], 0).mine()
 
+    def test_large_item_universe_uses_uncached_conditional_supports(self):
+        import cupy as cp
+        from cupami.frequentPattern._fptree import build_tree, conditional_tree
+        tree = build_tree(cp, cp.asarray([0, 0, 1], dtype=cp.uint64),
+                          cp.asarray([0, 1499, 0], dtype=cp.uint32),
+                          cp.asarray([3, 2], dtype=cp.uint64), 1500, 1)
+        child = conditional_tree(cp, tree, 1499, 1500, 1)
+        self.assertIsNone(tree.conditional_supports)
+        self.assertEqual(cp.asnumpy(child.items).tolist(), [-1, 0])
+        self.assertEqual(cp.asnumpy(child.counts).tolist(), [0, 3])
+
     def test_weighted_conditional_counts_are_exact_uint64(self):
         import cupy as cp
         from cupami.frequentPattern._fptree import build_tree, conditional_tree

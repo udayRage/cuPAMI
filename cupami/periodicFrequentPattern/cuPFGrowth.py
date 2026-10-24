@@ -12,9 +12,9 @@ from ..frequentPattern import _fptree
 class cuPFGrowth(TemporalInput, cuFPGrowth):
     """Conditional FP-tree mining with temporal checks before expansion."""
     def mine(self):
+        self._startTime = time.perf_counter()
         cp = self._getCudaModule()
         with cp.cuda.using_allocator(cp.get_default_memory_pool().malloc):
-            self._startTime = time.perf_counter()
             labels, rows, columns = self._prepare(cp)
             rows, columns = _fptree.unique_pairs(cp, rows, columns)
             weights = cp.ones(self._transactionCount, dtype=cp.uint64)

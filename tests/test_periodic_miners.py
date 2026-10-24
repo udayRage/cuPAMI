@@ -72,8 +72,8 @@ class PeriodicMinersTest(unittest.TestCase):
 
     def test_generator_csv_exports(self):
         with tempfile.TemporaryDirectory() as directory:
-            generator = TemporalDatabase(50, 5, avg_length=2.5, seed=42, timestampStep=2,
-                                               repeatChance=.3)
+            generator = TemporalDatabase(50, 5, avg_length=2.5, seed=42, repeatAllowed=True,
+                                         missingAllowed=True)
             generator.create()
             path = Path(directory) / 'temporal.csv'
             generator.save(path)

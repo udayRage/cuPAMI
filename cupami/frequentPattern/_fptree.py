@@ -12,6 +12,17 @@ import numpy as np
 
 
 _PROJECTION_SOURCE = r'''
+extern "C" __global__ void all_ancestor_supports(
+    unsigned long long n, const long long* parents, const long long* items,
+    const unsigned long long* counts, unsigned int item_count,
+    unsigned long long* supports) {
+    unsigned long long node = (unsigned long long)blockIdx.x * blockDim.x + threadIdx.x + 1;
+    if (node >= n) return;
+    unsigned long long offset = (unsigned long long)items[node] * item_count;
+    for (long long parent = parents[node]; parent > 0; parent = parents[parent])
+        atomicAdd(&supports[offset + items[parent]], counts[node]);
+}
+
 extern "C" __global__ void ancestor_supports(
     const long long* nodes, unsigned long long n,
     const long long* parents, const long long* items,
@@ -61,7 +72,7 @@ def _projection_kernels(device):
 
     module = cp.RawModule(code=_PROJECTION_SOURCE, options=("--std=c++11",))
     return tuple(module.get_function(name) for name in (
-        "ancestor_supports", "projected_lengths", "emit_projected_paths"
+        "ancestor_supports", "projected_lengths", "emit_projected_paths", "all_ancestor_supports"
     ))
 
 
@@ -73,6 +84,8 @@ class FPTree:
     header: list
     single_path: bool
     depth: int
+    conditional_supports: object = None
+    conditional_host_supports: object = None
 
 
 def unique_pairs(cp, rows, columns):
@@ -86,7 +99,7 @@ def unique_pairs(cp, rows, columns):
     return rows[keep], columns[keep]
 
 
-def build_tree(cp, rows, columns, weights, item_count, min_support):
+def build_tree(cp, rows, columns, weights, item_count, min_support, *, supports=None):
     """Build a weighted FP-tree on the GPU, merging equal prefixes by level.
 
     rows/columns encode weighted baskets. All operations on the baskets,
@@ -96,13 +109,18 @@ def build_tree(cp, rows, columns, weights, item_count, min_support):
     if not rows.size:
         return None
     rows = rows.astype(cp.int64, copy=False)
-    supports = cp.zeros(item_count, dtype=cp.uint64)
-    cp.add.at(supports, columns, weights[rows])
-    frequent = supports >= min_support
-    keep = frequent[columns]
-    rows, columns = rows[keep], columns[keep]
-    if not rows.size:
-        return None
+    if supports is None:
+        supports = cp.zeros(item_count, dtype=cp.uint64)
+        cp.add.at(supports, columns, weights[rows])
+        frequent = supports >= min_support
+        keep = frequent[columns]
+        rows, columns = rows[keep], columns[keep]
+        if not rows.size:
+            return None
+    else:
+        # Conditional projection has already counted supports and removed
+        # infrequent items. Reuse its exact uint64 counts.
+        frequent = supports >= min_support
 
     # Descending weighted support, with deterministic item-ID tie breaking.
     item_order = cp.lexsort(cp.stack((cp.arange(item_count, dtype=cp.uint64),
@@ -114,7 +132,10 @@ def build_tree(cp, rows, columns, weights, item_count, min_support):
     lengths = cp.bincount(rows.astype(cp.int64), minlength=len(weights))
     offsets = cp.concatenate((cp.zeros(1, dtype=cp.int64), cp.cumsum(lengths)))
     parent_for_row = cp.zeros(len(weights), dtype=cp.int64)
-    depth = int(lengths.max())
+    histogram = cp.asnumpy(cp.bincount(lengths))
+    depth = len(histogram) - 1
+    active_counts = np.cumsum(histogram[::-1], dtype=np.int64)[::-1][1:]
+    active_order = cp.argsort(lengths)[::-1]
 
     parent_parts = [cp.full(1, -1, dtype=cp.int64)]
     item_parts = [cp.full(1, -1, dtype=cp.int64)]  # root; item ID 0 is valid
@@ -122,7 +143,7 @@ def build_tree(cp, rows, columns, weights, item_count, min_support):
     node_count = 1
     single_path = True
     for level in range(depth):
-        active = cp.flatnonzero(lengths > level)
+        active = active_order[:int(active_counts[level])]
         level_items = columns[offsets[active] + level].astype(cp.int64)
         level_parents = parent_for_row[active]
         level_order = cp.lexsort(cp.stack((level_items, level_parents)))
@@ -150,28 +171,49 @@ def build_tree(cp, rows, columns, weights, item_count, min_support):
                   cp.concatenate(count_parts), header, single_path, depth)
 
 
-def conditional_tree(cp, tree, item, item_count, min_support):
-    """Project the weighted ancestor paths of each node for the selected item."""
+def _ancestor_counts(cp, tree, item, item_count):
+    # Bound per-tree cache memory; large item universes retain the sparse
+    # per-header traversal instead of allocating a quadratic matrix.
+    if 8 * item_count * item_count <= 16 * 1024**2:
+        if tree.conditional_supports is None:
+            counts = cp.zeros((item_count, item_count), dtype=cp.uint64)
+            kernel = _projection_kernels(cp.cuda.runtime.getDevice())[3]
+            kernel(((len(tree.items) + 254) // 256,), (256,), (
+                np.uint64(len(tree.items)), tree.parents, tree.items, tree.counts,
+                np.uint32(item_count), counts,
+            ))
+            tree.conditional_supports = counts
+            tree.conditional_host_supports = cp.asnumpy(counts)
+        return tree.conditional_supports[item], tree.conditional_host_supports[item], None
     nodes = cp.flatnonzero(tree.items == item)
-    if not nodes.size:
-        return None
-    support_kernel, length_kernel, emit_kernel = _projection_kernels(cp.cuda.runtime.getDevice())
-    grid, block = ((len(nodes) + 255) // 256,), (256,)
     supports = cp.zeros(item_count, dtype=cp.uint64)
-    common = (nodes, np.uint64(len(nodes)), tree.parents, tree.items)
-    support_kernel(grid, block, common + (tree.counts, supports))
-    frequent = supports >= min_support
-    header = cp.flatnonzero(frequent)
+    if nodes.size:
+        kernel = _projection_kernels(cp.cuda.runtime.getDevice())[0]
+        kernel(((len(nodes) + 255) // 256,), (256,), (
+            nodes, np.uint64(len(nodes)), tree.parents, tree.items, tree.counts, supports,
+        ))
+    return supports, cp.asnumpy(supports), nodes
+
+
+def conditional_tree(cp, tree, item, item_count, min_support):
+    """Project weighted paths, rejecting empty headers from cached supports."""
+    supports, host_supports, nodes = _ancestor_counts(cp, tree, item, item_count)
+    header = np.flatnonzero(host_supports >= min_support)
     if not header.size:
         return None
     if header.size == 1:
         selected = int(header[0])
-        support = int(supports[selected])
-        return FPTree(cp.asarray([-1, 0], dtype=cp.int64),
-                      cp.asarray([-1, selected], dtype=cp.int64),
-                      cp.asarray([0, support], dtype=cp.uint64),
+        support = int(host_supports[selected])
+        links = cp.asarray([[-1, 0], [-1, selected]], dtype=cp.int64)
+        return FPTree(links[0], links[1], cp.asarray([0, support], dtype=cp.uint64),
                       [(selected, support)], True, 1)
 
+    if nodes is None:
+        nodes = cp.flatnonzero(tree.items == item)
+    _, length_kernel, emit_kernel, _ = _projection_kernels(cp.cuda.runtime.getDevice())
+    grid, block = ((len(nodes) + 255) // 256,), (256,)
+    common = (nodes, np.uint64(len(nodes)), tree.parents, tree.items)
+    frequent = cp.asarray(host_supports >= min_support)
     lengths = cp.empty(len(nodes), dtype=cp.uint64)
     length_kernel(grid, block, common + (frequent, lengths))
     offsets = cp.concatenate((cp.zeros(1, dtype=cp.uint64), cp.cumsum(lengths)))
@@ -180,4 +222,4 @@ def conditional_tree(cp, tree, item, item_count, min_support):
     columns = cp.empty(total, dtype=cp.uint32)
     emit_kernel(grid, block, common + (frequent, offsets, rows, columns))
     weights = tree.counts[nodes]
-    return build_tree(cp, rows, columns, weights, item_count, min_support)
+    return build_tree(cp, rows, columns, weights, item_count, min_support, supports=supports)

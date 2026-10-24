@@ -28,6 +28,19 @@ Replace `cuApriori` with `cuEclat` or `cuFPGrowth` to use another algorithm.
 See [quickstart.ipynb](quickstart.ipynb) for a runnable example of all three.
 Mining requires CuPy and a CUDA GPU.
 
+## Timing
+
+```python
+print("Loading:", miner.getLoadingTime())
+print("Mining:", miner.getMiningTime())
+print("Total:", miner.getTotalRuntime())
+```
+
+All times are seconds. Loading covers constructor input parsing and transfer;
+mining covers GPU preparation and search, including initialization on first use.
+Total is loading plus the latest mining time. Generation, idle time, and saving
+are excluded. `getRuntime()` remains the mining-time shorthand.
+
 ## Inputs and outputs
 
 ![Inputs and outputs of cuPAMI algorithms](docs/figures/algorithm-io.svg)
@@ -44,6 +57,7 @@ Mining requires CuPy and a CUDA GPU.
 |---|---|---|
 | Transactional | `cuApriori`, `cuEclat`, `cuFPGrowth` | `minSup` |
 | Temporal | `cuPFApriori`, `cuPFEclat`, `cuPFGrowth` | `minSup`, `maxPer` |
+| Fuzzy CSV | `cuFFIMiner` | `minSup` |
 
 Transactional results contain each pattern's support count. Temporal results
 contain `(support, periodicity)`.
@@ -66,12 +80,28 @@ patterns = miner.getPatterns()
 
 `maxPer=100` allows a maximum gap of 100 timestamp units, including the start
 and end gaps. Temporal input rows have a timestamp followed by their items.
-Use `repeatChance=0.2` to allow repeated timestamps and `mergeTimestamps=True`
-to combine rows sharing a timestamp. See the [notebook examples](quickstart.ipynb).
+Use `repeatAllowed=True` to allow repeated timestamps and `missingAllowed=True`
+to allow gaps. Set `mergeTimestamps=True` to combine repeated timestamps.
+See the [notebook examples](quickstart.ipynb).
+
+## Fuzzy data (CSV)
+
+```python
+import cupami as cuPAMI
+
+file = "https://u-aizu.ac.jp/~udayrage/datasets/fuzzyDatabases/Fuzzy_T10I4D100K.csv"
+miner = cuPAMI.cuFFIMiner(file, minSup=0.005)
+miner.mine()
+patterns = miner.getPatterns()
+```
+
+A local fuzzy CSV filename works too. Rows contain `items:memberships`.
+The miner keeps the strongest fuzzy region per base item and returns
+floating-point support. See [fuzzy input details](docs/fuzzy-data.md).
 
 ## Files are optional
 
-Both transactional and temporal miners accept CSV, BIN, and Parquet files.
+Transactional and temporal miners accept CSV, BIN, and Parquet files.
 Use a file containing the matching type of data:
 
 ```python
@@ -144,6 +174,7 @@ See [GDS setup and verification](docs/transaction-formats.md#optional-gds-input)
 | `cuEclat`, vertical search in `cuPFEclat` | Zaki et al., KDD 1997; Zaki, TKDE 2000 [2, 3] |
 | `cuFPGrowth`, FP-tree search in `cuPFGrowth` | Han, Pei and Yin, SIGMOD 2000 [4] |
 | Periodicity definition and pruning | Kiran, Kitsuregawa and Reddy, JSS 2016 [5] |
+| `cuFFIMiner` fuzzy support and region selection | Lin, Li, Fournier-Viger and Hong, JIFS 2015 [6] |
 
 These implementations adapt the referenced algorithms for CUDA. The temporal
 miners add maximum-gap checks, including the start and end gaps.
@@ -167,6 +198,12 @@ miners add maximum-gap checks, including the start and end gaps.
    Section 1 and Example 1.
    [Paper](https://www.tkl.iis.u-tokyo.ac.jp/new/uploads/publication_file/file/744/5-8-2015_final.pdf).
 
+6. Jerry Chun-Wei Lin, Ting Li, Philippe Fournier-Viger and Tzung-Pei Hong.
+   **A fast Algorithm for mining fuzzy frequent itemsets.** Journal of
+   Intelligent & Fuzzy Systems, 29(6), 2015, pp. 2373–2379.
+   DOI: 10.3233/IFS-151936. Definitions 4–5, Strategy 1 and Algorithm 1.
+   [Paper](https://www.philippe-fournier-viger.com/spmf/ffiminer.pdf).
+
 ### Code and GPU I/O credits
 
 - **CUDA bitsets and cuDF loading:** adapted from
@@ -180,3 +217,10 @@ miners add maximum-gap checks, including the start and end gaps.
   See the [KvikIO API](https://docs.rapids.ai/api/kvikio/stable/api/)
   and [runtime settings](https://docs.rapids.ai/api/kvikio/stable/runtime_settings/).
 - **BIN layout, converter, and temporal CUDA kernels:** implemented in this repository.
+
+- **Fuzzy mining:** strongest-region selection and vertical search follow
+  [PAMI FFIMiner](https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/fuzzyFrequentPattern/basic/FFIMiner.py).
+  The GPU minimum/reduction approach is adapted from
+  [PAMI cuFFIMiner](https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/fuzzyFrequentPattern/cuda/cuFFIMiner.py),
+  GPL-3.0, Copyright (C) 2021 Rage Uday Kiran; PAMI credits the CUDA code to
+  Mithun Thangaraj. cuPAMI uses float64 memberships and batched depth-first search.

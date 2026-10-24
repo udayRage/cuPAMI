@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from cupami import convertFile, convertTransactions, cuApriori
+from cupami import convertFile, convertTransactions, cuApriori, cuPFApriori
 
 
 class TransactionConverterTest(unittest.TestCase):
@@ -12,7 +12,7 @@ class TransactionConverterTest(unittest.TestCase):
             convertFile([[1, 2], [3]], path, dataType="transactional")
             self.assertEqual(path.read_text(), "1,2\n3\n")
             with self.assertRaisesRegex(ValueError, "Unsupported data type"):
-                convertFile([[1, 2]], path, dataType="temporal")
+                convertFile([[1, 2]], path, dataType="spatial")
             self.assertEqual(path.read_text(), "1,2\n3\n")
 
     def test_tab_csv_round_trip_all_formats(self):
@@ -43,6 +43,19 @@ class TransactionConverterTest(unittest.TestCase):
                 summary = convertTransactions([], path)
                 self.assertEqual(summary["transactions"], 0)
                 self.assertEqual(cuApriori(path, 1, use_gds=False, use_gpu_io=False)._Database, [])
+
+    def test_temporal_round_trip_preserves_repeats_and_empty_baskets(self):
+        rows = [[3, 1, 2], [1, 0], [1, 2], [8]]
+        with tempfile.TemporaryDirectory() as directory:
+            source = rows
+            for suffix in ('csv', 'bin', 'parquet', 'csv'):
+                path = Path(directory) / ('temporal.' + suffix)
+                summary = convertFile(source, path, dataType='temporal')
+                self.assertEqual(summary['transactions'], 4)
+                reader = cuPFApriori(path, 1, 8)
+                self.assertEqual(reader._timestamps, [1, 1, 3, 8])
+                self.assertEqual(reader._Database, [('0',), ('2',), ('1', '2'), ()])
+                source = path
 
     def test_invalid_ids_do_not_create_output(self):
         with tempfile.TemporaryDirectory() as folder:

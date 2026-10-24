@@ -8,6 +8,7 @@ import csv
 import io
 import math
 import numbers
+import time
 from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlparse
@@ -65,6 +66,7 @@ class TemporalInput(cuApriori):
     and ends at the largest input timestamp (or explicit endTime).
     """
     def __init__(self, iFile, minSup, maxPer, sep=None, *, endTime=None):
+        loading_start = time.perf_counter()
         self._timestamps = []
         self.endTime = endTime
         self.maxPer = maxPer
@@ -76,6 +78,7 @@ class TemporalInput(cuApriori):
         # Fractions refer to elapsed timestamp units, not number of records.
         self._maxPer = maxPer * self._endTimestamp if isinstance(maxPer, float) and 0 < maxPer <= 1 else maxPer
         self._periods = {}
+        self._loadingTime = time.perf_counter() - loading_start
 
     @staticmethod
     def _timestamp(value):

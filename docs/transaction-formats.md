@@ -111,9 +111,17 @@ For temporal generation, `avg_length` counts items only, excluding the timestamp
 It applies before `mergeTimestamps=True` unions baskets; merged rows can therefore
 be longer and their average can differ from the requested value.
 
-`TemporalDatabase` accepts `repeatChance` (0–1) to repeat the previous
-timestamp and `mergeTimestamps=True` to combine rows sharing a timestamp.
-Merging keeps unique items and may reduce the number of output rows.
+`TemporalDatabase` has three boolean switches, all defaulting to `False`:
+
+- `repeatAllowed=True` permits repeated timestamps, such as `1, 1, 2`.
+- `missingAllowed=True` permits gaps, such as `1, 3, 4`.
+- `mergeTimestamps=True` unions items sharing a timestamp and requires
+  `repeatAllowed=True`.
+
+Timestamp steps are chosen uniformly from allowed steps: 0 for repetition,
+1 for the next timestamp, and 2 to skip a timestamp. Allowing a behavior
+makes it possible, not guaranteed in a small dataset. Merging may reduce
+output row count and increase merged basket length beyond `avg_length`.
 
 Timestamps must be nonnegative int64 integers. Rows are sorted by timestamp;
 repeated timestamps remain separate transactions, and empty baskets retain
@@ -133,7 +141,8 @@ generator = cuPAMI.TemporalDatabase(
     transactions=10000,
     items=50,
     avg_length=6,
-    repeatChance=0.2,
+    repeatAllowed=True,
+    missingAllowed=True,
     mergeTimestamps=False,
 )
 data = generator.create()
@@ -321,3 +330,19 @@ mount options. The workspace's `/home` RAID10 volume (`/dev/md0`) failed strict
 cuFile registration. Keep datasets on the verified NVMe filesystem for direct
 GDS experiments. Driver availability alone does not prove that a particular
 file used direct DMA.
+
+
+## Timing
+
+All seven miners expose `getLoadingTime()`, `getMiningTime()`, and
+`getTotalRuntime()` in seconds. `getRuntime()` is an alias for mining time.
+Loading finishes in the constructor, including synchronization of GPU readers.
+Mining includes device preparation, GPU initialization on first use, and search.
+Total is the sum of loading and the latest mining call, excluding time between
+calls, dataset generation, saving, and formatting results. Repeated mining
+replaces the mining measurement without reloading the input.
+
+FP-growth batches ancestor counts per tree, reuses conditional supports, and
+selects active rows by length to reduce repeated small GPU operations.
+The conditional support cache is limited to 16 MiB per tree (with a host copy);
+larger item universes use per-header traversal. Weighted counts remain uint64.

@@ -37,6 +37,7 @@ if __name__ == "__main__" and not __package__:
 
 class cuApriori:
     def __init__(self, iFile, minSup, sep=None, use_gds="auto", use_gpu_io="auto"):
+        loading_start = time.perf_counter()
         if use_gds not in ("auto", True, False):
             raise ValueError('use_gds must be "auto", True, or False')
         if use_gpu_io not in ("auto", True, False):
@@ -60,6 +61,9 @@ class cuApriori:
         self._finalPatterns: Dict[Tuple[str, ...], int] = {}
         self._startTime = 0.0
         self._endTime = 0.0
+        if self._deviceTransactions is not None or self._binaryDevice is not None:
+            self._getCudaModule().cuda.get_current_stream().synchronize()
+        self._loadingTime = time.perf_counter() - loading_start
 
     def _readTransactions(self, source):
         if isinstance(source, str) and urlparse(source).scheme in ("http", "https"):
@@ -361,9 +365,9 @@ class cuApriori:
         ])
 
     def mine(self):
+        self._startTime = time.perf_counter()
         cp = self._getCudaModule()
         from ._bitsets import build_bitsets, count_supports
-        self._startTime = time.perf_counter()
 
         items, rows, columns = self._getDevicePairs(cp)
         itemIndexes = {item: index for index, item in enumerate(items)}
@@ -414,7 +418,20 @@ class cuApriori:
                 file.write(f"{patternText} : {support}\n")
 
     def getRuntime(self):
+        """Mining time in seconds, excluding constructor input loading."""
         return self._endTime - self._startTime
+
+    def getLoadingTime(self):
+        """Constructor input parsing/loading time, including device transfer."""
+        return self._loadingTime
+
+    def getMiningTime(self):
+        """Time for the latest mine() call, including GPU structure preparation."""
+        return self.getRuntime()
+
+    def getTotalRuntime(self):
+        """Loading plus latest mining time; excludes idle time and saving."""
+        return self.getLoadingTime() + self.getMiningTime()
 
     def getMemoryRSS(self):
         try:
@@ -434,7 +451,9 @@ class cuApriori:
         print("Total number of Frequent Patterns:", len(self._finalPatterns))
         print("Total Memory in USS:", self.getMemoryUSS())
         print("Total Memory in RSS:", self.getMemoryRSS())
-        print("Total ExecutionTime in seconds:", self.getRuntime())
+        print("Loading time (seconds):", self.getLoadingTime())
+        print("Mining time (seconds):", self.getMiningTime())
+        print("Total time (seconds):", self.getTotalRuntime())
 
 
 Apriori = cuApriori

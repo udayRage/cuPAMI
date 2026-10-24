@@ -2,6 +2,11 @@ from .TransactionalDatabase import TransactionalDatabase
 
 
 class TemporalDatabase(TransactionalDatabase):
+    """Generate timestamped baskets with optional random repeats and gaps.
+
+    Allowed timestamp steps are 0 (repeat), 1 (next), and 2 (skip one).
+    All flags default to False. Merging unions items at each repeated timestamp.
+    """
     def __init__(
         self,
         transactions,
@@ -9,26 +14,22 @@ class TemporalDatabase(TransactionalDatabase):
         avg_length=None,
         seed=None,
         *,
-        timestampStep=1,
-        repeatChance=0.0,
+        repeatAllowed=False,
+        missingAllowed=False,
         mergeTimestamps=False,
     ):
-        if isinstance(timestampStep, bool) or not isinstance(timestampStep, int):
-            raise TypeError("timestampStep must be an integer")
-        if timestampStep < 1:
-            raise ValueError("timestampStep must be at least 1")
-        if isinstance(repeatChance, bool) or not isinstance(
-            repeatChance, (int, float)
+        for name, value in (
+            ("repeatAllowed", repeatAllowed),
+            ("missingAllowed", missingAllowed),
+            ("mergeTimestamps", mergeTimestamps),
         ):
-            raise TypeError("repeatChance must be a number")
-        if not 0 <= repeatChance <= 1:
-            raise ValueError("repeatChance must be between 0 and 1")
-        if not isinstance(mergeTimestamps, bool):
-            raise TypeError("mergeTimestamps must be a boolean")
-
+            if not isinstance(value, bool):
+                raise TypeError(f"{name} must be a boolean")
+        if mergeTimestamps and not repeatAllowed:
+            raise ValueError("mergeTimestamps=True requires repeatAllowed=True")
         super().__init__(transactions, items, avg_length, seed)
-        self.timestampStep = timestampStep
-        self.repeatChance = repeatChance
+        self.repeatAllowed = repeatAllowed
+        self.missingAllowed = missingAllowed
         self.mergeTimestamps = mergeTimestamps
 
     def _generateTransactions(self):
@@ -37,11 +38,14 @@ class TemporalDatabase(TransactionalDatabase):
         pendingItems = set()
 
         for index, transaction in enumerate(super()._generateTransactions()):
-            if index and not (
-                self.repeatChance
-                and self._random.random() < self.repeatChance
-            ):
-                timestamp += self.timestampStep
+            if index:
+                step = 1
+                if self.repeatAllowed or self.missingAllowed:
+                    step = self._random.randint(
+                        0 if self.repeatAllowed else 1,
+                        2 if self.missingAllowed else 1,
+                    )
+                timestamp += step
 
             if not self.mergeTimestamps:
                 yield [timestamp, *transaction]

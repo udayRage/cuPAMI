@@ -8,8 +8,8 @@ class cuPFApriori(TemporalInput):
     _BATCH_SIZE = 4096
 
     def mine(self):
-        cp = self._getCudaModule()
         self._startTime = time.perf_counter()
+        cp = self._getCudaModule()
         labels, _, _ = self._prepare(cp)
         candidates = [(label,) for label in labels]
         while candidates:

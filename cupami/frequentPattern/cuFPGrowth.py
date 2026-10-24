@@ -31,6 +31,7 @@ class cuFPGrowth(cuApriori):
     """
 
     def mine(self):
+        self._startTime = time.perf_counter()
         cp = self._getCudaModule()
         # cuDF can change CuPy's process-wide allocator during import. Keep
         # tree allocation consistent across readers without changing that
@@ -39,7 +40,6 @@ class cuFPGrowth(cuApriori):
             self._mineWithPool(cp)
 
     def _mineWithPool(self, cp):
-        self._startTime = time.perf_counter()
         self._finalPatterns = {}
         labels, rows, columns = self._getDevicePairs(cp)
         if labels and self._minSup < 1:

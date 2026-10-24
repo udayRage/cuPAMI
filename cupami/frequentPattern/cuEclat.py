@@ -37,8 +37,8 @@ class cuEclat(cuApriori):
     _INTERSECTION_BATCH_BYTES = 64 * 1024 * 1024
 
     def mine(self):
-        cp = self._getCudaModule()
         self._startTime = time.perf_counter()
+        cp = self._getCudaModule()
         self._finalPatterns = {}
         items, rows, columns = self._getDevicePairs(cp)
         bitsets = _bitsets.build_bitsets(cp, rows, columns, self._transactionCount, len(items))

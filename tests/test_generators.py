@@ -109,9 +109,34 @@ class GeneratorTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 generator.createTransactionalDatabase('invalid.extension')
 
+    def test_temporal_repeat_and_missing_flags(self):
+        for repeat in (False, True):
+            for missing in (False, True):
+                generator = TemporalDatabase(200, 10, avg_length=3, seed=11,
+                                             repeatAllowed=repeat, missingAllowed=missing)
+                rows = generator.create()
+                steps = [right[0] - left[0] for left, right in zip(rows, rows[1:])]
+                allowed = {1} | ({0} if repeat else set()) | ({2} if missing else set())
+                self.assertEqual(set(steps), allowed)
+                if repeat:
+                    merged = TemporalDatabase(200, 10, avg_length=3, seed=11,
+                                               repeatAllowed=True, missingAllowed=missing,
+                                               mergeTimestamps=True).create()
+                    expected = {}
+                    for timestamp, *items in rows:
+                        expected.setdefault(timestamp, set()).update(items)
+                    self.assertEqual(merged, [[ts, *sorted(items)] for ts, items in expected.items()])
+        with self.assertRaises(ValueError):
+            TemporalDatabase(10, 5, mergeTimestamps=True)
+        for key in ('repeatAllowed', 'missingAllowed', 'mergeTimestamps'):
+            with self.assertRaises(TypeError):
+                TemporalDatabase(10, 5, **{key: 1})
+
     def test_temporal_merging_keeps_unique_items(self):
-        rows = TemporalDatabase(20, 10, avg_length=3, seed=3,
-                                repeatChance=1, mergeTimestamps=True).create()
+        generator = TemporalDatabase(20, 10, avg_length=3, seed=3,
+                                     repeatAllowed=True, mergeTimestamps=True)
+        with patch.object(generator._random, 'randint', return_value=0):
+            rows = generator.create()
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0][0], 1)
         self.assertEqual(rows[0][1:], sorted(set(rows[0][1:])))
