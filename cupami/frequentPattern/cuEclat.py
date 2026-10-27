@@ -52,7 +52,7 @@ class cuEclat(cuApriori):
         # Pair preprocessing forms the prefix classes described in the Eclat
         # papers. Its cost is included in mine(), not amortized away.
         classes = {}
-        pairs = combinations(frequent, 2)
+        pairs = self._candidatePairs(frequent, items)
         while True:
             batch = list(islice(pairs, self._PAIR_BATCH_SIZE))
             if not batch:
@@ -73,6 +73,12 @@ class cuEclat(cuApriori):
         cp.cuda.get_current_stream().synchronize()
         self._endTime = time.perf_counter()
 
+    def _candidatePairs(self, frequent, items):
+        return combinations(frequent, 2)
+
+    def _extensionBatch(self, cp, prefix, labels, bitsets, start, stop):
+        return labels[start:stop], bitsets[start:stop]
+
     def _searchClass(self, cp, prefix, labels, bitsets):
         # Explicit DFS frames avoid Python's recursion limit and keep only
         # classes along the active search path, rather than all sibling trees.
@@ -90,13 +96,16 @@ class cuEclat(cuApriori):
             batchSize = max(1, self._INTERSECTION_BATCH_BYTES // max(1, 4 * words))
             for start in range(position + 1, len(currentLabels), batchSize):
                 stop = min(len(currentLabels), start + batchSize)
-                intersections, supports = _bitsets.intersect_extensions(
-                    cp, vertical[position], vertical[start:stop]
+                batchLabels, batchBits = self._extensionBatch(
+                    cp, nextPrefix, currentLabels, vertical, start, stop
                 )
+                if not batchLabels:
+                    continue
+                intersections, supports = _bitsets.intersect_extensions(cp, vertical[position], batchBits)
                 keep = []
                 for offset, support in enumerate(supports):
                     if support >= self._minSup:
-                        name = currentLabels[start + offset]
+                        name = batchLabels[offset]
                         self._finalPatterns[nextPrefix + (name,)] = int(support)
                         names.append(name)
                         keep.append(offset)

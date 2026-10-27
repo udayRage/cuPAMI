@@ -58,6 +58,7 @@ are excluded. `getRuntime()` remains the mining-time shorthand.
 | Transactional | `cuApriori`, `cuEclat`, `cuFPGrowth` | `minSup` |
 | Temporal | `cuPFApriori`, `cuPFEclat`, `cuPFGrowth` | `minSup`, `maxPer` |
 | Fuzzy CSV | `cuFFIMiner`, `cuMFFIMiner` | `minSup` |
+| Spatial CSV + neighbour CSV | `cuSpatialEclat` | `minSup` |
 
 Transactional results contain each pattern's support count. Temporal results
 contain `(support, periodicity)`.
@@ -107,6 +108,18 @@ patterns = miner.getPatterns()
 ```
 
 See [fuzzy input details](docs/fuzzy-data.md).
+
+## Spatial data
+
+```python
+miner = cuPAMI.cuSpatialEclat("transactions.csv", "neighbours.csv", minSup=0.01)
+miner.mine()
+print("Patterns:", len(miner.getPatterns()))
+```
+
+Like PAMI's `SpatialECLAT`, the miner takes item-only transactions and a
+neighbour file. CSV input only; support counting runs on the GPU. See
+[spatial input details](docs/spatial-data.md) and the notebook example.
 
 ## Files are optional
 
@@ -185,6 +198,7 @@ See [GDS setup and verification](docs/transaction-formats.md#optional-gds-input)
 | Periodicity definition and pruning | Kiran, Kitsuregawa and Reddy, JSS 2016 [5] |
 | `cuFFIMiner` fuzzy support and region selection | Lin, Li, Fournier-Viger and Hong, JIFS 2015 [6] |
 | `cuMFFIMiner` multiple-region support and joins | Lin et al., IJFS 2017 (online 2016) [7] |
+| `cuSpatialEclat` spatial constraints and neighbour pruning | Kiran et al., SIGSPATIAL 2020 [8]; Eclat [3] |
 
 These implementations adapt the referenced algorithms for CUDA. The temporal
 miners add maximum-gap checks, including the start and end gaps.
@@ -220,6 +234,12 @@ miners add maximum-gap checks, including the start and end gaps.
    pp. 1032–1040; published online in 2016. DOI: 10.1007/s40815-016-0246-1.
    [Paper](https://www.philippe-fournier-viger.com/spmf/mffiminer.pdf).
 
+8. R. Uday Kiran, Sourabh Shrivastava, Philippe Fournier-Viger, Koji Zettsu,
+   Masashi Toyoda and Masaru Kitsuregawa. **Discovering Frequent Spatial
+   Patterns in Very Large Spatiotemporal Databases.** SIGSPATIAL 2020,
+   pp. 445–448. DOI: 10.1145/3397536.3422206.
+   [Paper](https://doi.org/10.1145/3397536.3422206).
+
 ### Code and GPU I/O credits
 
 - **CUDA bitsets and cuDF loading:** adapted from
@@ -245,3 +265,9 @@ miners add maximum-gap checks, including the start and end gaps.
   [PAMI cuMFFIMiner](https://github.com/UdayLab/PAMI/blob/d6d05d9f9134f6039eede0c69b463fc1c2031262/PAMI/fuzzyFrequentPattern/cuda/cuMFFIMiner.py),
   GPL-3.0, Copyright (C) 2026 Rage Uday Kiran. cuPAMI shares its float64 GPU
   intersections with `cuFFIMiner` and excludes joins within the same base item.
+
+- **Spatial neighbour pruning:** based on
+  [PAMI SpatialECLAT](https://github.com/UdayLab/PAMI/blob/d6d05d9f9134f6039eede0c69b463fc1c2031262/PAMI/georeferencedFrequentPattern/basic/SpatialECLAT.py),
+  written by B. Sai Chitra under Professor Rage Uday Kiran, GPL-3.0,
+  Copyright (C) 2021 Rage Uday Kiran. cuPAMI uses the shared CUDA Eclat
+  bitsets for support counting and CPU neighbour checks for candidate pruning.
