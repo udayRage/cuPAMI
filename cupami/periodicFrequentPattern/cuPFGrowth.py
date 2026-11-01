@@ -2,6 +2,14 @@
 
 Based on Han et al.'s FP-growth search, with GPU periodicity checks.
 See README.md#references for sources.
+
+GPU references: Arour and Belkahla, CIT 2014, Section 5.3,
+doi:10.2498/cit.1002361; PAMI gPFMinerBit for temporal GPU checks.
+https://hrcak.srce.hr/en/clanak/190853
+https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/periodicFrequentPattern/cuda/gPFMinerBit.py
+Local hybrid combines weighted conditional FP-tree arrays with bitset gap
+checks. It is not a reproduction of flattened-array gPF-Miner.
+See docs/algorithm-references.md for the mapping and limitations.
 """
 import time
 from ._temporal import TemporalInput

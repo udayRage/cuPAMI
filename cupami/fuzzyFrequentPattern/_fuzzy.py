@@ -2,6 +2,11 @@
 
 Copyright (C) 2021 Rage Uday Kiran. PAMI credits its CUDA implementation to
 Mithun Thangaraj. Source revision and paper credits: README.md#references.
+
+CUDA source: PAMI fuzzyFrequentPattern/cuda/cuFFIMiner.py,
+https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/fuzzyFrequentPattern/cuda/cuFFIMiner.py
+Minimum-membership reductions are shared with cuMFFIMiner; local kernels
+retain float64 intersections. See docs/algorithm-references.md.
 """
 from functools import lru_cache
 import numpy as np

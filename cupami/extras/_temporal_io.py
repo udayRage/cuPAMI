@@ -1,4 +1,7 @@
-"""Temporal BIN and Parquet storage with timestamps separate from item IDs."""
+"""Temporal BIN and Parquet storage with timestamps separate from item IDs.
+Local CUPAMIT1 schema; Apache Arrow list-column reference:
+https://arrow.apache.org/docs/python/parquet.html
+"""
 
 import shutil
 import struct

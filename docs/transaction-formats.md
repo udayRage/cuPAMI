@@ -23,15 +23,36 @@ The converter accepts local CSV/BIN/Parquet files, text URLs, or transaction
 iterables. It uses the same readers and writers as cuApriori and the generator.
 The shared entry point lives in `cupami/extras/fileConverter.py`; `dataType`
 selects the database layout and the output extension selects the storage format.
-`dataType="transactional"` is the default; use `dataType="temporal"` for
-timestamped data. `convertTransactions` remains a transactional shorthand.
+`dataType="transactional"` is the default and `"binary"` is its explicit alias.
+Use `dataType="temporal"` for timestamped data and `"quantitative"` for item quantities. `convertTransactions` remains a transactional shorthand.
 It requires no GPU and retains the database in CPU memory. Parquet requires
 PyArrow. Item IDs must be nonnegative uint32 integers (zero is preserved); conversion normalizes their
 numeric spelling and removes duplicate IDs within a basket. Transactional
 conversion omits empty baskets; temporal conversion preserves them and retains
 separate rows with repeated timestamps, sorted by timestamp.
-CSV output uses commas. The returned dictionary reports transaction and item
+CSV output uses commas; `.tsv` output uses tabs. Set `outputSep` to override
+the text output delimiter. Conversions use a temporary file in the destination
+directory and atomically replace the output after success, including when the
+source and destination are the same path. Invalid input preserves existing output. The returned dictionary reports transaction and item
 occurrence counts. The existing dataset is converted; no new data is generated.
+
+### Command-line converter
+
+```bash
+python -m cupami.extras.datasetConverter transactions.csv transactions.bin
+python -m cupami.extras.datasetConverter transactions.bin transactions.parquet
+python -m cupami.extras.datasetConverter transactions.parquet transactions.tsv
+python -m cupami.extras.datasetConverter temporal.bin temporal.csv --data-type temporal
+python -m cupami.extras.datasetConverter quantities.csv quantities.parquet --data-type quantitative
+python -m cupami.extras.datasetConverter custom.txt transactions.bin --sep ';'
+```
+
+`--sep` selects the input delimiter; `--output-sep` selects the output delimiter.
+Use `'\t'` for an explicit tab. The command prints transaction counts, item
+occurrences, maximum item ID, and the output format as JSON. Parquet requires
+PyArrow; conversion requires no CUDA installation. Quantitative source URLs are
+not supported; use local files or mapping rows. Binary and temporal readers also
+accept delimited text URLs.
 
 ## Generate synthetic transactions
 
@@ -40,7 +61,7 @@ Use the public package import and pass generated data directly to a miner:
 ```python
 import cupami as cuPAMI
 
-generator = cuPAMI.TransactionalDatabase(
+generator = cuPAMI.BinaryTransactionalDatabase(
     transactions=10000,
     items=50,
     avg_length=6,
@@ -162,6 +183,75 @@ cuPAMI.convertFile("temporal.csv", "temporal.bin", dataType="temporal")
 cuPAMI.convertFile("temporal.bin", "temporal.parquet", dataType="temporal")
 ```
 
+## Quantitative transactions
+
+Binary data records item presence. Quantitative data records an amount per item.
+The two generators are separate public classes; `TransactionalDatabase` remains
+available for compatibility with the binary generator's API.
+
+```python
+from cupami import QuantitativeTransactionalDatabase, convertFile
+
+generator = QuantitativeTransactionalDatabase(
+    transactions=10000, items=50, avg_length=6, seed=42,
+    min_quantity=1, max_quantity=10,
+)
+rows = generator.create()  # [{1: 3, 5: 7}, ...]
+generator.save("quantities.csv")
+generator.save("quantities.bin")
+generator.save("quantities.parquet")
+convertFile("quantities.parquet", "quantities.tsv", dataType="quantitative")
+```
+
+Quantities are independently sampled integers within the inclusive configured
+bounds. `createQuantitativeDatabase(path)` generates directly to a file.
+Runtime and memory reporting match the binary generator. `getTransactions()`
+returns independent copies of the item/quantity mappings. Empty mappings remain
+empty transactions during conversion.
+
+Quantitative text uses aligned `items:quantities` lists, without a header:
+
+```text
+1,5:3,7
+2,9:4,1
+:
+```
+
+A `.tsv` file separates each list with tabs. Readers validate equal list lengths,
+unique uint32 IDs (including normalized numeric aliases), and positive finite
+quantities. Binary/temporal conversion removes duplicate IDs; quantitative
+conversion rejects duplicate IDs to avoid guessing how to combine amounts.
+Integer quantities above `2**53` are rejected in mapping and integer-text input to avoid rounding
+when stored as float64. Quantitative amounts are not fuzzy memberships: the
+fuzzy miners require an explicit membership transformation first.
+
+### Quantitative BIN, version 1
+
+All fields are little endian. This is a cuPAMI format with its own magic value;
+transactional and temporal BIN readers cannot mistake it for their own layouts.
+
+| Byte position | Type | Meaning |
+|---|---|---|
+| 0 | 8 bytes | ASCII `CUPAMIQ1` |
+| 8 | uint64 | Number of transactions N |
+| 16 | uint64 | Number of item occurrences M |
+| 24 | uint64 | Largest item ID U (zero for empty data) |
+| 32 | uint64[N + 1] | Basket offsets |
+| 32 + 8*(N + 1) | uint32[M] | Item IDs |
+| 32 + 8*(N + 1) + 4*M | float64[M] | Aligned quantities |
+
+The exact size is `32 + 8*(N + 1) + 12*M` bytes. Offsets start at zero, never
+decrease, and end at M. Each item ID is at most U, and U fits uint32. Readers
+validate the header, exact array lengths, offsets, IDs, and quantities.
+
+### Quantitative Parquet
+
+Two non-null list columns: `items: list<uint32>` and
+`quantities: list<float64>`, with non-null members. Each row's list lengths
+must agree. Files use Snappy compression, with generation batches of up to
+8192 transactions. Conversion preserves quantities without membership conversion
+or utility weighting.
+
 ## CSV
 
 UTF-8, no header, one transaction per row, comma separated integer item IDs. Rows can have different lengths. This is a basket layout, not a one-hot matrix.
@@ -238,7 +328,7 @@ up to 8192 rows. PyArrow is required for reading and writing these files.
 
 ## Current scope
 
-Both generators export CSV, BIN, and Parquet. Transactional files store baskets;
+Binary, quantitative, and temporal generators export CSV, TSV, BIN, and Parquet. Transactional files store baskets;
 temporal files also store a timestamp per basket. Use the matching miner for
 each dataset type. Temporal Parquet requires PyArrow.
 
@@ -334,7 +424,7 @@ file used direct DMA.
 
 ## Timing
 
-All seven miners expose `getLoadingTime()`, `getMiningTime()`, and
+All miners expose `getLoadingTime()`, `getMiningTime()`, and
 `getTotalRuntime()` in seconds. `getRuntime()` is an alias for mining time.
 Loading finishes in the constructor, including synchronization of GPU readers.
 Mining includes device preparation, GPU initialization on first use, and search.

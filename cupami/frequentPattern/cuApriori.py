@@ -1,3 +1,18 @@
+"""CUDA Apriori references and implementation mapping.
+
+CUDA reference: Zhang, Zhang and Bakos, GPApriori, CLUSTER 2011,
+Section IV. doi:10.1109/CLUSTER.2011.61.
+https://cse.sc.edu/~jbakos/assets/papers/cluster11_paper_2.pdf
+Follows complete intersections of retained singleton bitsets, one block per
+candidate, word-parallel AND/popcount and shared-memory sum reduction.
+PAMI CUDA API/comparison implementations: cuApriori (tid-list) and
+cuAprioriBit (bitsets); cuPAMI uses the GPApriori counting layout.
+https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/frequentPattern/cuda/cuApriori.py
+https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/frequentPattern/cuda/cuAprioriBit.py
+Local changes: bulk CSV/BIN/Parquet readers, optional GDS, uint64 supports,
+and tuple-prefix candidate generation instead of GPApriori's candidate trie.
+Full mapping and source provenance: docs/algorithm-references.md.
+"""
 # cuApriori finds frequent patterns in transactional databases using CUDA.
 # Apriori uses the downward closure property to prune candidate patterns.
 # Algorithm: Agrawal and Srikant, "Fast Algorithms for Mining Association

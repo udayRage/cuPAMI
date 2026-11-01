@@ -9,7 +9,7 @@ This repository is under development.
 ```python
 import cupami as cuPAMI
 
-data = cuPAMI.TransactionalDatabase(
+data = cuPAMI.BinaryTransactionalDatabase(
     transactions=10000,
     items=50,
     avg_length=6,
@@ -55,8 +55,9 @@ are excluded. `getRuntime()` remains the mining-time shorthand.
 
 | Data | Algorithms | Parameters |
 |---|---|---|
-| Transactional | `cuApriori`, `cuEclat`, `cuFPGrowth` | `minSup` |
+| Binary transactional | `cuApriori`, `cuEclat`, `cuFPGrowth` | `minSup` |
 | Temporal | `cuPFApriori`, `cuPFEclat`, `cuPFGrowth` | `minSup`, `maxPer` |
+| Partial-periodic temporal | `cuPPPApriori`, `cuPPPEclat` | `minPS`, `period` |
 | Fuzzy CSV | `cuFFIMiner`, `cuMFFIMiner` | `minSup` |
 | Spatial CSV + neighbour CSV | `cuSpatialEclat` | `minSup` |
 
@@ -134,7 +135,7 @@ miner.mine()
 To save generated data, keep the generator:
 
 ```python
-generator = cuPAMI.TransactionalDatabase(
+generator = cuPAMI.BinaryTransactionalDatabase(
     transactions=10000,
     items=50,
     avg_length=6,
@@ -163,13 +164,47 @@ Parquet export and temporal Parquet input require PyArrow.
 `TemporalDatabase` also supports all three export formats. See [data formats and GPU loading](docs/transaction-formats.md)
 for input details and optional GDS support.
 
+## Binary and quantitative transaction generation
+
+`BinaryTransactionalDatabase` generates item-presence baskets.
+`TransactionalDatabase` remains available with the same binary behavior.
+`QuantitativeTransactionalDatabase` generates a separate item-to-quantity mapping
+for each transaction:
+
+```python
+binary = cuPAMI.BinaryTransactionalDatabase(10000, 50, avg_length=6, seed=42)
+transactions = binary.create()  # e.g. [1, 5, 9]
+
+quantitative = cuPAMI.QuantitativeTransactionalDatabase(
+    10000, 50, avg_length=6, seed=42, min_quantity=1, max_quantity=10,
+)
+quantities = quantitative.create()  # e.g. {1: 3, 5: 7, 9: 2}
+quantitative.save("quantities.csv")
+quantitative.save("quantities.bin")
+quantitative.save("quantities.parquet")
+```
+
+Quantities are raw amounts. Fuzzy miners require transformed memberships.
+See [formats and conversion](docs/transaction-formats.md).
+
 ## Convert a dataset
 
 ```python
 cuPAMI.convertFile("transactions.csv", "transactions.bin")
-cuPAMI.convertFile("transactions.csv", "transactions.parquet")
+cuPAMI.convertFile("transactions.bin", "transactions.parquet")
+cuPAMI.convertFile("transactions.parquet", "transactions.tsv")
+cuPAMI.convertFile("quantities.csv", "quantities.bin", dataType="quantitative")
 
 cuPAMI.convertFile("temporal.csv", "temporal.bin", dataType="temporal")
+```
+
+The converter works in both directions between CSV, TSV, BIN, and Parquet.
+It also has a command-line interface:
+
+```bash
+python -m cupami.extras.datasetConverter transactions.csv transactions.bin
+python -m cupami.extras.datasetConverter transactions.bin transactions.parquet
+python -m cupami.extras.datasetConverter quantities.parquet quantities.csv --data-type quantitative
 ```
 
 ## GPUDirect Storage (GDS)
@@ -188,13 +223,19 @@ See [GDS setup and verification](docs/transaction-formats.md#optional-gds-input)
 
 ## References
 
+See the [per-file CUDA references and implementation mapping](docs/algorithm-references.md)
+for GPU papers, pinned PAMI source links, and local adaptations. Each miner also
+includes its CUDA references in its module docstring.
+
 ### Algorithm sources
 
 | Implementation | Reference |
 |---|---|
-| `cuApriori`, Apriori search in `cuPFApriori` | Agrawal and Srikant, VLDB 1994 [1] |
-| `cuEclat`, vertical search in `cuPFEclat` | Zaki et al., KDD 1997; Zaki, TKDE 2000 [2, 3] |
-| `cuFPGrowth`, FP-tree search in `cuPFGrowth` | Han, Pei and Yin, SIGMOD 2000 [4] |
+| `cuApriori` | GPApriori, CLUSTER 2011, Section IV; PAMI cuApriori/cuAprioriBit; Apriori [1] |
+| `cuPFApriori`, `cuPFEclat`, `cuPFGrowth` | PAMI gPFMinerBit; related gPF-Miner, IEEE Big Data 2022; periodic model [5] |
+| `cuEclat` | PAMI cuEclatBit; gpuDCI GPU intersections, PDP 2012; Eclat [2, 3] |
+| `cuFPGrowth` | Arour and Belkahla, CIT 2014, Section 5.3; FP-growth [4] |
+| `cuPPPApriori`, `cuPPPEclat` | PAMI gPPMiner GPU scan; PPP_ECLAT API and consecutive-gap semantics |
 | Periodicity definition and pruning | Kiran, Kitsuregawa and Reddy, JSS 2016 [5] |
 | `cuFFIMiner` fuzzy support and region selection | Lin, Li, Fournier-Viger and Hong, JIFS 2015 [6] |
 | `cuMFFIMiner` multiple-region support and joins | Lin et al., IJFS 2017 (online 2016) [7] |

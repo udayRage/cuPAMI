@@ -6,6 +6,14 @@ https://doi.org/10.1145/342009.335372
 Algorithms 1 and 2 define tree construction and FP-growth; Lemma 3.2 gives
 the single-path optimization. This is a local GPU adaptation, not the
 authors' source code. See README.md#references.
+
+GPU reference: Arour and Belkahla, CIT 22(3), 2014, Section 5.3,
+doi:10.2498/cit.1002361. https://hrcak.srce.hr/en/clanak/190853
+Follows GPU array representations and projected conditional mining.
+Local adaptation uses parent/item/count arrays, CuPy level grouping and
+weighted ancestor kernels; it does not reproduce the paper's OpenCL
+FP-array/list layout. CPU schedules conditional trees.
+See docs/algorithm-references.md for the technique-to-code mapping.
 """
 
 from itertools import combinations

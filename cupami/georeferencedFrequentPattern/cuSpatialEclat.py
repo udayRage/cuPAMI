@@ -3,6 +3,14 @@
 Neighbour-constrained prefix search follows PAMI SpatialECLAT (B. Sai Chitra,
 Copyright 2021 Rage Uday Kiran, GPL-3.0). Spatial model: Kiran et al.,
 SIGSPATIAL 2020, doi:10.1145/3397536.3422206. See README.md#references.
+
+Implementation references: PAMI SpatialECLAT for neighbour pruning,
+and PAMI cuEclatBit for CUDA vertical intersections.
+https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/georeferencedFrequentPattern/basic/SpatialECLAT.py
+https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/frequentPattern/cuda/cuEclatBit.py
+Local hybrid checks neighbour compatibility on the CPU and counts support
+on the GPU; no published CUDA SpatialECLAT implementation is claimed.
+See docs/algorithm-references.md.
 """
 import csv
 import io

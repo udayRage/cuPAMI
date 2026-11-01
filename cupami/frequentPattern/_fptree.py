@@ -3,6 +3,12 @@
 Local CUDA/CuPy implementation of the FP-tree/conditional-base operations in
 Han, Pei and Yin, SIGMOD 2000. No source code was copied from that paper's
 authors. GPU level grouping replaces sequential pointer insertion.
+
+GPU array/projection reference: Arour and Belkahla, CIT 2014,
+Section 5.3, doi:10.2498/cit.1002361.
+https://hrcak.srce.hr/en/clanak/190853
+Uses local parent/item/count arrays, not the paper's FP-array list layout.
+See docs/algorithm-references.md for the CUDA adaptation.
 """
 
 from dataclasses import dataclass

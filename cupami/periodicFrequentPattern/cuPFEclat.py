@@ -2,6 +2,15 @@
 
 Uses Eclat's depth-first equivalence classes and intersects timestamp
 occurrence bitsets on the GPU. This is a local adaptation, not author code.
+
+GPU reference: PAMI gPFMinerBit and cuGPFMiner.
+https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/periodicFrequentPattern/cuda/gPFMinerBit.py
+https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/periodicFrequentPattern/cuda/cuGPFMiner.py
+Follows depth-first prefix search and GPU temporal intersections. Local
+counting uses transaction-row bitsets and explicit int64 timestamps.
+Tarun et al., IEEE Big Data 2022, doi:10.1109/BigData55660.2022.10020216,
+provides related flattened-array gPF-Miner; this is the bitset variant.
+See docs/algorithm-references.md for differences and boundary semantics.
 """
 import time
 from ._temporal import TemporalInput

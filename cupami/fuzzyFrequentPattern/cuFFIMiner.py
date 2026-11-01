@@ -4,6 +4,14 @@ Lin, Li, Fournier-Viger and Hong, "A fast Algorithm for mining fuzzy frequent
 itemsets," JIFS 29(6), 2015, 2373–2379. DOI:10.3233/IFS-151936.
 Maximum scalar cardinality and minimum-membership intersections follow the
 paper and PAMI FFIMiner. Local GPU vertical search; README.md#references.
+
+CUDA implementation reference: PAMI cuFFIMiner (GPL-3.0),
+Copyright (C) 2021 Rage Uday Kiran; CUDA implementation credited to
+Mithun Thangaraj.
+https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/fuzzyFrequentPattern/cuda/cuFFIMiner.py
+Follows GPU minimum-membership intersections and sum support; cuPAMI
+uses float64, block reductions and batched depth-first vertical search.
+See docs/algorithm-references.md for the CPU model/GPU distinction.
 """
 from array import array
 import csv

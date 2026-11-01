@@ -1,3 +1,9 @@
+"""cuPAMI uniform binary-basket sampler and storage writers.
+
+This is the original binary transaction generator; BinaryTransactionalDatabase
+provides its explicit data-type name. BIN is a file encoding, not a data type.
+Parquet list encoding: https://arrow.apache.org/docs/python/parquet.html
+"""
 import csv
 import math
 import numbers
@@ -118,9 +124,9 @@ class TransactionalDatabase:
             self._writeBinary(outputFile, transactions)
         elif suffix == ".parquet":
             self._writeParquet(outputFile, transactions)
-        elif suffix in ("", ".csv", ".txt", ".dat"):
+        elif suffix in ("", ".csv", ".tsv", ".txt", ".dat"):
             with Path(outputFile).open("w", newline="", encoding="utf-8") as output:
-                csv.writer(output).writerows(transactions)
+                csv.writer(output, delimiter="\t" if suffix == ".tsv" else ",").writerows(transactions)
         else:
             raise ValueError("Use a .csv, .bin, or .parquet output file")
 

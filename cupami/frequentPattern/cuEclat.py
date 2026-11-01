@@ -9,6 +9,15 @@ IEEE TKDE 12(3), 2000, pp. 372-390. doi:10.1109/69.846291.
 This is a local CUDA/bitset adaptation, not the authors' published C++ code.
 It batches pair preprocessing, then intersects retained vertical tidsets in
 depth-first prefix classes. See README.md#references for implementation sources.
+
+CUDA implementation reference: PAMI cuEclatBit (GPL-3.0).
+https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/frequentPattern/cuda/cuEclatBit.py
+Follows vertical GPU AND/popcount joins. cuPAMI retains child intersections
+in depth-first prefix classes and uses a block reduction per extension.
+GPU word-intersection/reduction context: Silvestri and Orlando, gpuDCI,
+PDP 2012, Section 4. doi:10.1109/PDP.2012.94.
+https://www.dsi.unive.it/~orlando/PUB/gpudci2012.pdf
+This implements Eclat search, not DCI's search. See docs/algorithm-references.md.
 """
 
 from itertools import combinations, islice

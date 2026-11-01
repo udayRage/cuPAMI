@@ -6,6 +6,13 @@ DOI:10.1007/s40815-016-0246-1. All frequent regions are retained; a pattern
 contains at most one region of each base item. GPU vertical adaptation;
 Based on PAMI cuMFFIMiner (GPL-3.0), Copyright (C) 2026 Rage Uday Kiran.
 PAMI and paper credits are in README.md#references.
+
+CUDA implementation reference (GPL-3.0):
+https://github.com/UdayLab/PAMI/blob/d6d05d9f9134f6039eede0c69b463fc1c2031262/PAMI/fuzzyFrequentPattern/cuda/cuMFFIMiner.py
+Follows all-region selection, exclusion of same-base joins, GPU pairwise
+minimum intersections and support reductions. Local scheduling is depth
+first and retains membership intersections for extension.
+See docs/algorithm-references.md.
 """
 from pathlib import Path
 import sys

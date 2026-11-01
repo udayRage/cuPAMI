@@ -3,6 +3,11 @@
 Periodicity follows Kiran, Kitsuregawa and Reddy (JSS, 2016), Section 1:
 maximum inter-arrival time including database start/end gaps. This kernel
 is local code; it does not implement that paper's greedy pruning algorithm.
+
+GPU scan reference: PAMI gPFMinerBit, supportAndPeriod.
+https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/periodicFrequentPattern/cuda/gPFMinerBit.py
+Local implementation scans only set bits and fetches explicit timestamps,
+preserving missing/repeated timestamps without allocating a dense timeline.
 """
 import csv
 import io

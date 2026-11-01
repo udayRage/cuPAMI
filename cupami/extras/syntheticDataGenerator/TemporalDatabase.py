@@ -1,3 +1,8 @@
+"""Local temporal workload generator built on the binary basket sampler.
+
+Timestamp-step sampling is a cuPAMI convention, not an implementation of
+a published temporal workload model. Format references: docs/transaction-formats.md.
+"""
 from .TransactionalDatabase import TransactionalDatabase
 
 

@@ -1,4 +1,14 @@
-"""Local CUDA Apriori adaptation with periodicity pruning; see README.md#references."""
+"""Local CUDA Apriori adaptation with periodicity pruning; see README.md#references.
+GPU counting reference: PAMI gPFMinerBit, supportAndPeriod kernel.
+https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/periodicFrequentPattern/cuda/gPFMinerBit.py
+Follows batched bitset intersections with per-candidate support/gap scans.
+Local variant uses breadth-first Apriori pruning and row-index bitsets plus
+int64 timestamps, rather than dense bits indexed by elapsed time.
+Related GPU temporal work: Tarun et al., IEEE Big Data 2022,
+doi:10.1109/BigData55660.2022.10020216 (gPF-Miner's flattened arrays).
+This file does not implement that paper's flattened-array algorithm.
+See docs/algorithm-references.md.
+"""
 import time
 from ._temporal import TemporalInput
 

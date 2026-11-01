@@ -1,16 +1,22 @@
 """CUDA pattern-mining utilities."""
 
-from .extras.syntheticDataGenerator import TransactionalDatabase, TemporalDatabase
+from .extras.syntheticDataGenerator import (
+    BinaryTransactionalDatabase, QuantitativeTransactionalDatabase,
+    TemporalDatabase, TransactionalDatabase,
+)
 from .frequentPattern import cuApriori, cuEclat, cuFPGrowth
 from .fuzzyFrequentPattern import cuFFIMiner, cuMFFIMiner, cuFlatMulti, cuGPUMulti
 from .georeferencedFrequentPattern import cuSpatialEclat
 from .periodicFrequentPattern import cuPFApriori, cuPFEclat, cuPFGrowth
+from .partialPeriodicPattern import cuPPPApriori, cuPPPEclat
 from .extras.fileConverter import convertFile, convertTransactions
 
 __all__ = [
     "TransactionalDatabase", "TemporalDatabase",
+    "BinaryTransactionalDatabase", "QuantitativeTransactionalDatabase",
     "cuApriori", "cuEclat", "cuFPGrowth",
     "cuPFApriori", "cuPFEclat", "cuPFGrowth",
     "cuFFIMiner", "cuMFFIMiner", "cuFlatMulti", "cuGPUMulti", "cuSpatialEclat",
+    "cuPPPApriori", "cuPPPEclat",
     "convertFile", "convertTransactions",
 ]

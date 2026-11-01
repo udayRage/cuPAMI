@@ -3,6 +3,12 @@
 Source: src/algorithms/frequent/fpminer-bitset.py, commit 2ed352a.
 https://github.com/udayRage/cuda_pami
 Uses zero based indices and 64 bit transaction/support counts in cuPAMI.
+
+GPU counting design: GPApriori, Section IV (complete intersection and
+block-wise AND/popcount reduction), doi:10.1109/CLUSTER.2011.61.
+https://cse.sc.edu/~jbakos/assets/papers/cluster11_paper_2.pdf
+PAMI CUDA comparison: frequentPattern/cuda/cuAprioriBit.py and cuEclatBit.py.
+See docs/algorithm-references.md for retained-intersection extensions.
 """
 
 from functools import lru_cache
