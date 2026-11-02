@@ -317,32 +317,48 @@ miners add maximum-gap checks, including the start and end gaps.
 
 ## Tutorials
 
-Select a GPU runtime in Colab before mining. Each notebook includes setup, input preparation, mining, results, and saving. Fuzzy and spatial notebooks use small sample datasets because dedicated data generators are not available.
+### 1. Pattern mining in binary transactional databases
 
-### Frequent pattern mining
+#### 1.1. Frequent pattern mining
 
-- [cuApriori](notebooks/frequentPattern/cuApriori.ipynb) · [Open in Colab](https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/frequentPattern/cuApriori.ipynb)
-- [cuEclat](notebooks/frequentPattern/cuEclat.ipynb) · [Open in Colab](https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/frequentPattern/cuEclat.ipynb)
-- [cuFPGrowth](notebooks/frequentPattern/cuFPGrowth.ipynb) · [Open in Colab](https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/frequentPattern/cuFPGrowth.ipynb)
+| CUDA |
+|---|
+| [cuApriori](notebooks/frequentPattern/cuApriori.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/frequentPattern/cuApriori.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
+| [cuEclat](notebooks/frequentPattern/cuEclat.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/frequentPattern/cuEclat.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
+| [cuFPGrowth](notebooks/frequentPattern/cuFPGrowth.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/frequentPattern/cuFPGrowth.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 
-### Periodic frequent pattern mining
+### 2. Pattern mining in binary temporal databases
 
-- [cuPFApriori](notebooks/periodicFrequentPattern/cuPFApriori.ipynb) · [Open in Colab](https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/periodicFrequentPattern/cuPFApriori.ipynb)
-- [cuPFEclat](notebooks/periodicFrequentPattern/cuPFEclat.ipynb) · [Open in Colab](https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/periodicFrequentPattern/cuPFEclat.ipynb)
-- [cuPFGrowth](notebooks/periodicFrequentPattern/cuPFGrowth.ipynb) · [Open in Colab](https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/periodicFrequentPattern/cuPFGrowth.ipynb)
+#### 2.1. Periodic frequent pattern mining
 
-### Partial periodic pattern mining
+| CUDA |
+|---|
+| [cuPFApriori](notebooks/periodicFrequentPattern/cuPFApriori.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/periodicFrequentPattern/cuPFApriori.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
+| [cuPFEclat](notebooks/periodicFrequentPattern/cuPFEclat.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/periodicFrequentPattern/cuPFEclat.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
+| [cuPFGrowth](notebooks/periodicFrequentPattern/cuPFGrowth.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/periodicFrequentPattern/cuPFGrowth.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 
-- [cuPPPApriori](notebooks/partialPeriodicPattern/cuPPPApriori.ipynb) · [Open in Colab](https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/partialPeriodicPattern/cuPPPApriori.ipynb)
-- [cuPPPEclat](notebooks/partialPeriodicPattern/cuPPPEclat.ipynb) · [Open in Colab](https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/partialPeriodicPattern/cuPPPEclat.ipynb)
+#### 2.2. Partial periodic pattern mining
 
-### Fuzzy frequent pattern mining
+| CUDA |
+|---|
+| [cuPPPApriori](notebooks/partialPeriodicPattern/cuPPPApriori.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/partialPeriodicPattern/cuPPPApriori.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
+| [cuPPPEclat](notebooks/partialPeriodicPattern/cuPPPEclat.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/partialPeriodicPattern/cuPPPEclat.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 
-- [cuFFIMiner](notebooks/fuzzyFrequentPattern/cuFFIMiner.ipynb) · [Open in Colab](https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/fuzzyFrequentPattern/cuFFIMiner.ipynb)
-- [cuMFFIMiner](notebooks/fuzzyFrequentPattern/cuMFFIMiner.ipynb) · [Open in Colab](https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/fuzzyFrequentPattern/cuMFFIMiner.ipynb)
-- [cuFlatMulti](notebooks/fuzzyFrequentPattern/cuFlatMulti.ipynb) · [Open in Colab](https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/fuzzyFrequentPattern/cuFlatMulti.ipynb)
-- [cuGPUMulti](notebooks/fuzzyFrequentPattern/cuGPUMulti.ipynb) · [Open in Colab](https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/fuzzyFrequentPattern/cuGPUMulti.ipynb)
+### 3. Pattern mining in fuzzy databases
 
-### Spatial frequent pattern mining
+#### 3.1. Fuzzy frequent pattern mining
 
-- [cuSpatialEclat](notebooks/georeferencedFrequentPattern/cuSpatialEclat.ipynb) · [Open in Colab](https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/georeferencedFrequentPattern/cuSpatialEclat.ipynb)
+| CUDA |
+|---|
+| [cuFFIMiner](notebooks/fuzzyFrequentPattern/cuFFIMiner.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/fuzzyFrequentPattern/cuFFIMiner.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
+| [cuMFFIMiner](notebooks/fuzzyFrequentPattern/cuMFFIMiner.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/fuzzyFrequentPattern/cuMFFIMiner.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
+| [cuFlatMulti](notebooks/fuzzyFrequentPattern/cuFlatMulti.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/fuzzyFrequentPattern/cuFlatMulti.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
+| [cuGPUMulti](notebooks/fuzzyFrequentPattern/cuGPUMulti.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/fuzzyFrequentPattern/cuGPUMulti.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
+
+### 4. Pattern mining in geo-referenced databases
+
+#### 4.1. Spatial frequent pattern mining
+
+| CUDA |
+|---|
+| [cuSpatialEclat](notebooks/georeferencedFrequentPattern/cuSpatialEclat.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/georeferencedFrequentPattern/cuSpatialEclat.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
