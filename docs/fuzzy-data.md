@@ -38,20 +38,20 @@ patterns = miner.getPatterns()
 `cuFFIMiner` keeps the strongest region per item. `cuMFFIMiner` keeps every
 frequent region. A multiple-region pattern still contains at most one region
 of each base item: `{A.L, B.H}` is allowed, while `{A.L, A.H}` is excluded.
-Both use the same parser, float64 support, bounded GPU batches, timing, and
-output methods. CSV/text files and URLs are supported by both.
+`cuMFFIMiner` uses shared base-item traversal (SBT). `cuMultiFuzzyBaseline`
+uses flat traversal, processing region combinations separately. Both require a
+local CSV/text file; URLs are supported only by `cuFFIMiner`.
 
-An integer `minSup` is absolute support. A float in `(0, 1]` is a fraction of
-the transaction count, without rounding; a larger float is absolute fuzzy
-support. Float64 reductions use threshold tolerance
-`1e-12 * max(1, absolute_minimum_support)`.
+An integer `minSup` is absolute fuzzy support. A float in `(0, 1]` is a fraction
+of the transaction count; larger floats are absolute fuzzy support.
 
-Parsing uses the CPU; CUDA handles support reductions and minimum-membership
-intersections, with depth-first scheduling on the CPU. Initial GPU storage is
-8 bytes per transaction per retained frequent region. Intersection batches
-target 64 MiB, with additional memory for retained search classes.
+The multiple-region miners use `membershipScale=10` by default, representing
+memberships in tenths; choose a scale matching your input precision. Duplicate
+labels keep their maximum membership by default (`duplicatePolicy='max'`).
+`inputMode` selects `auto`, `gpu`, or `python` parsing. GPU parsing is selected
+automatically for supported numeric base-item labels; Python parsing supports
+other labels. File reading and parsing are included in `mine()` timing.
+`cuFFIMiner` uses CPU parsing and float64 membership intersections.
 
-The miner shares pattern output, saving, memory reporting, and the separate
-loading/mining/total timing methods with the other miners. BIN, Parquet,
-quantitative-to-fuzzy conversion, and fuzzy generation are outside this version.
-Paper and PAMI source credits are in the [README](../README.md#references).
+See the [SBT guide](algorithms/cuMFFIMiner.md) and
+[flat baseline guide](algorithms/cuMultiFuzzyBaseline.md) for examples and paper credits.

@@ -60,7 +60,7 @@ See the [individual algorithm guides](docs/algorithms/README.md) for inputs, par
 | Binary transactional | `cuApriori`, `cuEclat`, `cuFPGrowth` | `minSup` |
 | Temporal | `cuPFApriori`, `cuPFEclat`, `cuPFGrowth` | `minSup`, `maxPer` |
 | Partial-periodic temporal | `cuPPPApriori`, `cuPPPEclat` | `minPS`, `period` |
-| Fuzzy CSV | `cuFFIMiner`, `cuMFFIMiner` | `minSup` |
+| Fuzzy CSV | `cuFFIMiner`, `cuMFFIMiner`, `cuMultiFuzzyBaseline` | `minSup` |
 | Spatial CSV + neighbour CSV | `cuSpatialEclat` | `minSup` |
 
 Transactional results contain each pattern's support count. Temporal results
@@ -102,10 +102,11 @@ patterns = miner.getPatterns()
 A local fuzzy CSV filename works too. Rows contain `items:memberships`.
 The miner keeps the strongest fuzzy region per base item and returns
 floating-point support. Use `cuMFFIMiner` to keep all frequent regions,
-with at most one region per base item in a pattern:
+with at most one region per base item in a pattern. It uses shared base-item
+traversal on a local fuzzy CSV/text file; `cuMultiFuzzyBaseline` uses flat traversal:
 
 ```python
-miner = cuPAMI.cuMFFIMiner(file, minSup=0.005)
+miner = cuPAMI.cuMFFIMiner("fuzzy.csv", minSup=0.005)
 miner.mine()
 patterns = miner.getPatterns()
 ```
@@ -304,10 +305,10 @@ miners add maximum-gap checks, including the start and end gaps.
   GPL-3.0, Copyright (C) 2021 Rage Uday Kiran; PAMI credits the CUDA code to
   Mithun Thangaraj. cuPAMI uses float64 memberships and batched depth-first search.
 
-- **Multiple fuzzy regions:** based on
-  [PAMI cuMFFIMiner](https://github.com/UdayLab/PAMI/blob/d6d05d9f9134f6039eede0c69b463fc1c2031262/PAMI/fuzzyFrequentPattern/cuda/cuMFFIMiner.py),
-  GPL-3.0, Copyright (C) 2026 Rage Uday Kiran. cuPAMI shares its float64 GPU
-  intersections with `cuFFIMiner` and excludes joins within the same base item.
+- **Multiple fuzzy regions:** `cuMFFIMiner` uses shared base-item traversal and
+  `cuMultiFuzzyBaseline` provides flat traversal for “cuMFFP-Miner: GPU-Accelerated
+  Multiple Fuzzy Frequent Pattern Mining via Shared Base-Item Traversal” by
+  Mithun Thangaraj and Rage Uday Kiran, The University of Aizu, Japan.
 
 - **Spatial neighbour pruning:** based on
   [PAMI SpatialECLAT](https://github.com/UdayLab/PAMI/blob/d6d05d9f9134f6039eede0c69b463fc1c2031262/PAMI/georeferencedFrequentPattern/basic/SpatialECLAT.py),
@@ -351,9 +352,8 @@ miners add maximum-gap checks, including the start and end gaps.
 | CUDA |
 |---|
 | [cuFFIMiner](notebooks/fuzzyFrequentPattern/cuFFIMiner.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/fuzzyFrequentPattern/cuFFIMiner.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
+| [cuMultiFuzzyBaseline](notebooks/fuzzyFrequentPattern/cuMultiFuzzyBaseline.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/fuzzyFrequentPattern/cuMultiFuzzyBaseline.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 | [cuMFFIMiner](notebooks/fuzzyFrequentPattern/cuMFFIMiner.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/fuzzyFrequentPattern/cuMFFIMiner.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
-| [cuFlatMulti](notebooks/fuzzyFrequentPattern/cuFlatMulti.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/fuzzyFrequentPattern/cuFlatMulti.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
-| [cuGPUMulti](notebooks/fuzzyFrequentPattern/cuGPUMulti.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/fuzzyFrequentPattern/cuGPUMulti.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 
 ### 4. Pattern mining in geo-referenced databases
 

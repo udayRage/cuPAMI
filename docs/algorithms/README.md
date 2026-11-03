@@ -11,7 +11,6 @@ Short usage guides for each cuPAMI mining algorithm.
 - [cuPPPApriori](cuPPPApriori.md)
 - [cuPPPEclat](cuPPPEclat.md)
 - [cuFFIMiner](cuFFIMiner.md)
+- [cuMultiFuzzyBaseline](cuMultiFuzzyBaseline.md)
 - [cuMFFIMiner](cuMFFIMiner.md)
-- [cuFlatMulti](cuFlatMulti.md)
-- [cuGPUMulti](cuGPUMulti.md)
 - [cuSpatialEclat](cuSpatialEclat.md)

@@ -1,12 +1,16 @@
 cuMFFIMiner
 
-Find fuzzy frequent patterns across all frequent regions, allowing at most one region per base item in each pattern.
+These implementations accompany the paper “cuMFFP-Miner: GPU-Accelerated Multiple Fuzzy Frequent Pattern Mining via Shared Base-Item Traversal” by Mithun Thangaraj and Rage Uday Kiran, The University of Aizu, Japan.
+
+Multiple fuzzy frequent pattern mining keeps all frequent fuzzy regions of an item, such as `1.L` and `1.H`, available for different patterns. Here, `1` is the base item and `L` or `H` is its fuzzy region. A pattern contains at most one region of each base item. A pattern is frequent when the sum of its minimum membership in each transaction reaches `minSup`.
+
+`cuMFFIMiner` uses shared base-item traversal. It groups fuzzy regions belonging to the same base item and shares transaction matching across their region combinations. For example, combinations involving `1.L` and `1.H` can reuse the base item’s traversal while retaining separate fuzzy supports. This reduces repeated matching work; it does not merge the regions or their output patterns.
 
 Input is a fuzzy CSV/text file with rows such as `1.L\t2.H:0.8\t0.6`. Labels contain an item and region separated by a dot; membership values range from 0 to 1. Support is the sum of minimum memberships across matching transactions.
 
-`minSup` is an integer absolute fuzzy support or a float fraction in (0, 1]. `sep` selects the item delimiter. Local paths and HTTP(S) URLs are supported.
+`minSup` is an integer absolute fuzzy support or a float fraction in (0, 1]. `sep` selects the item delimiter. These miners require a local file. `device` selects the CUDA device, `inputMode` selects `auto`, `gpu`, or `python` parsing, and `membershipScale` controls membership precision (default 10). The default duplicate policy keeps the maximum membership per label.
 
-Mining requires CuPy and an NVIDIA CUDA GPU. Parquet input additionally requires PyArrow.
+Mining requires CuPy and an NVIDIA CUDA GPU.
 
 ```python
 from cupami import cuMFFIMiner

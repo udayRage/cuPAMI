@@ -117,17 +117,16 @@ See the model discussed in the
   [PAMI cuFFIMiner](https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/fuzzyFrequentPattern/cuda/cuFFIMiner.py).
   Strongest-region selection and the support model come from Lin et al.,
   JIFS 2015, DOI: [10.3233/IFS-151936](https://doi.org/10.3233/IFS-151936).
-- `cuMFFIMiner`: follows
-  [PAMI cuMFFIMiner](https://github.com/UdayLab/PAMI/blob/d6d05d9f9134f6039eede0c69b463fc1c2031262/PAMI/fuzzyFrequentPattern/cuda/cuMFFIMiner.py)
-  for all-region selection, same-base-item exclusions, and GPU reductions.
-  The model is Lin et al., IJFS 2017 (online 2016), DOI:
+- `cuMFFIMiner` uses shared base-item traversal; `cuMultiFuzzyBaseline` uses
+  flat traversal. These accompany “cuMFFP-Miner: GPU-Accelerated Multiple Fuzzy
+  Frequent Pattern Mining via Shared Base-Item Traversal” by Mithun Thangaraj
+  and Rage Uday Kiran, The University of Aizu, Japan. Both retain frequent
+  regions and exclude combinations of regions belonging to the same base item.
+  The multiple fuzzy frequent itemset model is described by Lin et al.,
+  IJFS 2017 (online 2016), DOI:
   [10.1007/s40815-016-0246-1](https://doi.org/10.1007/s40815-016-0246-1).
 
-cuPAMI shares float64 CUDA intersection kernels between the two miners and
-retains intersections for batched depth-first search. PAMI's CUDA level-wise
-scheduling and the papers' fuzzy-list implementations are different execution
-strategies. Raw quantitative amounts require a membership transformation before
-being passed to a fuzzy miner.
+Raw quantitative amounts require a membership transformation before fuzzy mining.
 
 ## Spatial patterns
 
