@@ -1,4 +1,4 @@
-cuPPPApriori
+# cuPPPApriori
 
 Find patterns with enough occurrence gaps within a chosen period, using level-wise search.
 

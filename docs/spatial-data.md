@@ -62,4 +62,4 @@ Distance is a preparation setting, not a parameter of `SpatialECLAT`.
 
 The implementation follows PAMI's neighbour-constrained search and uses
 cuPAMI's CUDA Eclat infrastructure. Paper and code credits are in
-[README](../README.md#references).
+[README](https://github.com/udayRage/cuPAMI#references).

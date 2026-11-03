@@ -1,4 +1,4 @@
-cuFPGrowth
+# cuFPGrowth
 
 Find frequent itemsets using an FP-tree and GPU preparation of conditional trees.
 

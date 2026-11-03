@@ -1,4 +1,4 @@
-cuPFGrowth
+# cuPFGrowth
 
 Find periodic frequent patterns using FP-tree search and periodicity filtering.
 

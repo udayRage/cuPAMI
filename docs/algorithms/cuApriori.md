@@ -1,4 +1,4 @@
-cuApriori
+# cuApriori
 
 Find frequent itemsets with level-wise candidate generation and GPU support counting.
 

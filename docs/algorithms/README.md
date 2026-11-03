@@ -1,4 +1,4 @@
-Algorithm guides
+# Algorithm guides
 
 Short usage guides for each cuPAMI mining algorithm.
 
@@ -14,3 +14,20 @@ Short usage guides for each cuPAMI mining algorithm.
 - [cuMultiFuzzyBaseline](cuMultiFuzzyBaseline.md)
 - [cuMFFIMiner](cuMFFIMiner.md)
 - [cuSpatialEclat](cuSpatialEclat.md)
+
+```{toctree}
+:hidden:
+
+cuApriori
+cuEclat
+cuFFIMiner
+cuFPGrowth
+cuMFFIMiner
+cuMultiFuzzyBaseline
+cuPFApriori
+cuPFEclat
+cuPFGrowth
+cuPPPApriori
+cuPPPEclat
+cuSpatialEclat
+```

@@ -1,4 +1,4 @@
-cuEclat
+# cuEclat
 
 Find frequent itemsets with depth-first search and GPU intersections of transaction bitsets.
 

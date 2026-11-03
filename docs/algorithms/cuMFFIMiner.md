@@ -1,4 +1,4 @@
-cuMFFIMiner
+# cuMFFIMiner
 
 These implementations accompany the paper “cuMFFP-Miner: GPU-Accelerated Multiple Fuzzy Frequent Pattern Mining via Shared Base-Item Traversal” by Mithun Thangaraj and Rage Uday Kiran, The University of Aizu, Japan.
 

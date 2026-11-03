@@ -1,4 +1,4 @@
-cuPFApriori
+# cuPFApriori
 
 Find frequent patterns whose occurrence gaps stay within a maximum period, using level-wise search.
 

@@ -1,4 +1,4 @@
-cuPFEclat
+# cuPFEclat
 
 Find periodic frequent patterns using depth-first search and GPU intersections.
 

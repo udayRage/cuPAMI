@@ -1,4 +1,4 @@
-cuSpatialEclat
+# cuSpatialEclat
 
 Find frequent patterns constrained by item neighbourhoods. Neighbour compatibility is checked on the CPU and support is counted on the GPU.
 

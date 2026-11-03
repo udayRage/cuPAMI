@@ -1,4 +1,4 @@
-cuPPPEclat
+# cuPPPEclat
 
 Find partial-periodic patterns using depth-first search and GPU intersections.
 

@@ -1,4 +1,4 @@
-cuFFIMiner
+# cuFFIMiner
 
 Find fuzzy frequent patterns after selecting the region with the largest total membership for each base item.
 

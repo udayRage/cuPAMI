@@ -1,6 +1,6 @@
 # Data generation and file formats
 
-See [algorithm and implementation references](../README.md#references) for the original
+See [algorithm and implementation references](https://github.com/udayRage/cuPAMI#references) for the original
 Apriori paper, adapted CUDA code, and the official GDS/KvikIO sources.
 
 ## Convert an existing dataset
