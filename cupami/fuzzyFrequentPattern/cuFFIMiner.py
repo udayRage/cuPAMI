@@ -1,3 +1,31 @@
+# cuFFIMiner discovers fuzzy frequent patterns after selecting the region with the largest
+# total membership for each base item. CUDA intersections sum minimum memberships to obtain
+# fuzzy support.
+#
+# **Importing this algorithm into a python program**
+#
+#             import cupami as alg
+#
+#             iFile = 'fuzzy.csv'
+#             oFile = 'patterns.txt'
+#             minSup = 10  # absolute support; 0.1 means 10% of transactions
+#
+#             obj = alg.cuFFIMiner(iFile=iFile, minSup=minSup)
+#             obj.mine()
+#
+#             frequentPatterns = obj.getPatterns()
+#             print("Total number of patterns:", len(frequentPatterns))
+#
+#             obj.save(oFile)
+#             Df = obj.getPatternsAsDataFrame()  # requires pandas
+#
+#             print("Total Memory in USS:", obj.getMemoryUSS())
+#             print("Total Memory in RSS:", obj.getMemoryRSS())
+#             print("Mining time in seconds:", obj.getRuntime())
+#             print("Loading time in seconds:", obj.getLoadingTime())
+#             print("Total time in seconds:", obj.getTotalRuntime())
+#
+
 """CUDA fuzzy frequent itemset mining from transformed CSV data.
 
 Lin, Li, Fournier-Viger and Hong, "A fast Algorithm for mining fuzzy frequent
@@ -13,6 +41,24 @@ Follows GPU minimum-membership intersections and sum support; cuPAMI
 uses float64, block reductions and batched depth-first vertical search.
 See docs/algorithm-references.md for the CPU model/GPU distinction.
 """
+
+__copyright__ = """
+Copyright (C)  2026 Rage Uday Kiran
+
+     This program is free software: you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation, either version 3 of the License, or
+     (at your option) any later version.
+
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+     GNU General Public License for more details.
+
+     You should have received a copy of the GNU General Public License
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+"""
+
 from array import array
 import csv
 import io
@@ -34,7 +80,78 @@ from ._fuzzy import singleton_supports, intersect_memberships
 
 
 class cuFFIMiner(cuApriori):
-    """CSV/text input with rows labels:memberships; one region per base item.
+    """
+    **About this algorithm**
+
+    :**Description**: cuFFIMiner discovers fuzzy frequent patterns after selecting the region with the largest total membership for each base item. CUDA intersections sum minimum memberships to obtain fuzzy support.
+
+    :**Reference**: Lin, J. C.-W., Li, T., Fournier-Viger, P., Hong, T.-P.: A fast Algorithm for mining fuzzy frequent itemsets. JIFS 29(6), pp. 2373–2379 (2015). https://doi.org/10.3233/IFS-151936
+
+    :**Parameters**:    - **iFile** (*str or pathlib.Path*) -- Fuzzy CSV/text file with labels:memberships rows. HTTP(S) text URLs are supported.
+                            - **minSup** (*int or float*) -- Positive minimum support. Integers are absolute support; floats in (0, 1] are fractions of the transaction count. Larger floats are absolute support.
+                            - **sep** (*str or None*) -- Item delimiter. None detects supported delimiters from the input.
+
+    :**Attributes**:    - **_startTime** (*float*) -- Start time of the latest mining call.
+                            - **_endTime** (*float*) -- Completion time of the latest mining call.
+                            - **_finalPatterns** (*mapping*) -- Patterns and supports retained by the miner.
+                            - **_loadingTime** (*float*) -- Input loading time in seconds.
+                            - **_transactionCount** (*int*) -- Number of input transactions used by the miner.
+
+    **Execution methods**
+
+    **Terminal command**
+
+    .. code-block:: console
+
+        Format:
+
+        python3 -m cupami.fuzzyFrequentPattern.cuFFIMiner <inputFile> <outputFile> <minSup> [sep]
+
+        Example Usage:
+
+        python3 -m cupami.fuzzyFrequentPattern.cuFFIMiner sampleDB.csv patterns.txt 10
+
+    .. note:: Mining requires CuPy and an NVIDIA CUDA GPU. Memory methods report
+              process RSS/USS in bytes when psutil is available, otherwise zero.
+              getRuntime() reports mining time; getTotalRuntime() adds loading.
+              Parquet support, where available, requires PyArrow. Dataframe output
+              requires pandas. See docs/algorithm-references.md for source credits
+              and differences from the referenced algorithms.
+
+    **Calling from a python program**
+
+    .. code-block:: python
+
+        import cupami as alg
+
+        iFile = 'fuzzy.csv'
+        oFile = 'patterns.txt'
+        minSup = 10  # absolute support; 0.1 means 10% of transactions
+
+        obj = alg.cuFFIMiner(iFile=iFile, minSup=minSup)
+        obj.mine()
+
+        frequentPatterns = obj.getPatterns()
+        print("Total number of patterns:", len(frequentPatterns))
+
+        obj.save(oFile)
+        Df = obj.getPatternsAsDataFrame()  # requires pandas
+
+        print("Total Memory in USS:", obj.getMemoryUSS())
+        print("Total Memory in RSS:", obj.getMemoryRSS())
+        print("Mining time in seconds:", obj.getRuntime())
+        print("Loading time in seconds:", obj.getLoadingTime())
+        print("Total time in seconds:", obj.getTotalRuntime())
+
+    **Credits**
+
+    The cuPAMI implementation was written by Mithun Thangaraj under the supervision
+    of Professor Rage Uday Kiran. Adapted source credits and copyright notices are
+    retained in the module documentation and docs/algorithm-references.md.
+
+    **Implementation notes**
+
+    CSV/text input with rows labels:memberships; one region per base item.
 
     Memberships are finite values in [0, 1]. The suffix after a label's last
     dot denotes its region. Keep each base item's largest total membership

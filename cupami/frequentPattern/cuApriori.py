@@ -1,3 +1,31 @@
+# cuApriori discovers frequent itemsets using level-wise candidate generation and CUDA
+# bitset support counting. The Apriori downward closure property prunes candidates with
+# infrequent subsets.
+#
+# **Importing this algorithm into a python program**
+#
+#             import cupami as alg
+#
+#             iFile = 'sampleDB.csv'
+#             oFile = 'patterns.txt'
+#             minSup = 10  # absolute support; 0.1 means 10% of transactions
+#
+#             obj = alg.cuApriori(iFile=iFile, minSup=minSup)
+#             obj.mine()
+#
+#             frequentPatterns = obj.getPatterns()
+#             print("Total number of patterns:", len(frequentPatterns))
+#
+#             obj.save(oFile)
+#             Df = obj.getPatternsAsDataFrame()  # requires pandas
+#
+#             print("Total Memory in USS:", obj.getMemoryUSS())
+#             print("Total Memory in RSS:", obj.getMemoryRSS())
+#             print("Mining time in seconds:", obj.getRuntime())
+#             print("Loading time in seconds:", obj.getLoadingTime())
+#             print("Total time in seconds:", obj.getTotalRuntime())
+#
+
 """CUDA Apriori references and implementation mapping.
 
 CUDA reference: Zhang, Zhang and Bakos, GPApriori, CLUSTER 2011,
@@ -31,6 +59,24 @@ Full mapping and source provenance: docs/algorithm-references.md.
 
 from __future__ import annotations
 
+__copyright__ = """
+Copyright (C)  2026 Rage Uday Kiran
+
+     This program is free software: you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation, either version 3 of the License, or
+     (at your option) any later version.
+
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+     GNU General Public License for more details.
+
+     You should have received a copy of the GNU General Public License
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+"""
+
+
 import csv
 import io
 import math
@@ -51,6 +97,79 @@ if __name__ == "__main__" and not __package__:
 
 
 class cuApriori:
+    """
+    **About this algorithm**
+
+    :**Description**: cuApriori discovers frequent itemsets using level-wise candidate generation and CUDA bitset support counting. The Apriori downward closure property prunes candidates with infrequent subsets.
+
+    :**Reference**: Agrawal, R., Srikant, R.: Fast Algorithms for Mining Association Rules. VLDB, pp. 487–499 (1994). https://www.vldb.org/conf/1994/P487.PDF
+                    Zhang, F., Zhang, Y., Bakos, J.: GPApriori: GPU-Accelerated Frequent Itemset Mining. CLUSTER, pp. 590–594 (2011). https://doi.org/10.1109/CLUSTER.2011.61
+
+    :**Parameters**:    - **iFile** (*str or pathlib.Path or iterable*) -- Transaction rows or a CSV, BIN, or Parquet input file. CSV HTTP(S) URLs are also supported.
+                            - **minSup** (*int or float*) -- Positive minimum support. Integers are absolute support; floats in (0, 1] are fractions of the transaction count. Larger floats are absolute support.
+                            - **sep** (*str or None*) -- Item delimiter. None detects supported delimiters from the input.
+                            - **use_gds** (*str or bool*) -- "auto", True, or False. Required GDS supports local BIN input only.
+                            - **use_gpu_io** (*str or bool*) -- "auto", True, or False. Controls supported GPU input loading paths.
+
+    :**Attributes**:    - **_startTime** (*float*) -- Start time of the latest mining call.
+                            - **_endTime** (*float*) -- Completion time of the latest mining call.
+                            - **_finalPatterns** (*mapping*) -- Patterns and supports retained by the miner.
+                            - **_loadingTime** (*float*) -- Input loading time in seconds.
+                            - **_transactionCount** (*int*) -- Number of input transactions used by the miner.
+                            - **_Database** (*list or None*) -- Parsed transactions, or None when retained by a GPU loading path.
+
+    **Execution methods**
+
+    **Terminal command**
+
+    .. code-block:: console
+
+        Format:
+
+        python3 -m cupami.frequentPattern.cuApriori <inputFile> <outputFile> <minSup> [sep]
+
+        Example Usage:
+
+        python3 -m cupami.frequentPattern.cuApriori sampleDB.csv patterns.txt 10
+
+    .. note:: Mining requires CuPy and an NVIDIA CUDA GPU. Memory methods report
+              process RSS/USS in bytes when psutil is available, otherwise zero.
+              getRuntime() reports mining time; getTotalRuntime() adds loading.
+              Parquet support, where available, requires PyArrow. Dataframe output
+              requires pandas. See docs/algorithm-references.md for source credits
+              and differences from the referenced algorithms.
+
+    **Calling from a python program**
+
+    .. code-block:: python
+
+        import cupami as alg
+
+        iFile = 'sampleDB.csv'
+        oFile = 'patterns.txt'
+        minSup = 10  # absolute support; 0.1 means 10% of transactions
+
+        obj = alg.cuApriori(iFile=iFile, minSup=minSup)
+        obj.mine()
+
+        frequentPatterns = obj.getPatterns()
+        print("Total number of patterns:", len(frequentPatterns))
+
+        obj.save(oFile)
+        Df = obj.getPatternsAsDataFrame()  # requires pandas
+
+        print("Total Memory in USS:", obj.getMemoryUSS())
+        print("Total Memory in RSS:", obj.getMemoryRSS())
+        print("Mining time in seconds:", obj.getRuntime())
+        print("Loading time in seconds:", obj.getLoadingTime())
+        print("Total time in seconds:", obj.getTotalRuntime())
+
+    **Credits**
+
+    The cuPAMI implementation was written by Mithun Thangaraj under the supervision
+    of Professor Rage Uday Kiran. Adapted source credits and copyright notices are
+    retained in the module documentation and docs/algorithm-references.md.
+    """
     def __init__(self, iFile, minSup, sep=None, use_gds="auto", use_gpu_io="auto"):
         loading_start = time.perf_counter()
         if use_gds not in ("auto", True, False):
