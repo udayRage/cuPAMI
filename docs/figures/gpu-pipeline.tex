@@ -1,6 +1,6 @@
 % Build from repository root:
 % mkdir -p /tmp/cupami-diagram
-% tectonic --outdir /tmp/cupami-diagram docs/figures/gpu-pipeline.tex
+% pdflatex -interaction=nonstopmode -halt-on-error -output-directory=/tmp/cupami-diagram docs/figures/gpu-pipeline.tex
 % pdftocairo -svg /tmp/cupami-diagram/gpu-pipeline.pdf docs/figures/gpu-pipeline.svg
 \documentclass[tikz,border=6pt]{standalone}
 \usepackage[T1]{fontenc}
@@ -13,7 +13,7 @@
  label/.style={font=\normalsize\bfseries,align=center,fill=white,inner sep=3pt}]
 % Opaque canvas for light and dark README themes.
 \fill[white] (-.5,-4.0) rectangle (23,8.2);
-\node[anchor=west,font=\large\bfseries] at (0,7.5) {cuPAMI: data movement and GPU mining};
+\node[anchor=west,font=\large\bfseries] at (0,7.5) {2. CUDA data loading and GPU mining};
 % Host and device are physical regions, with a simple two-route input path.
 \draw[black!60,line width=1pt] (5.4,-1.5) rectangle (10.4,6.65);
 \node at (7.9,6.15) {CPU};
