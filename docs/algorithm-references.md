@@ -4,9 +4,8 @@ Each miner lists its references in its module docstring. This page maps the
 CUDA techniques to their implementations and records differences from the sources.
 PAMI comparison sources are pinned to
 [`48d0c25`](https://github.com/UdayLab/PAMI/tree/48d0c25fb5f1e4ff32e797fa00873033921f1aa7),
-with the separate `cuMFFIMiner` revision below. Existing source credits and
-GPL notices remain applicable. The two multi miners and their support modules
-are outside this reference update.
+with implementation-specific revisions below. Existing source credits and GPL
+notices remain applicable.
 
 ## Frequent patterns
 
@@ -32,6 +31,22 @@ uses tid-list intersections;
 uses packed bitsets. These are distinct CUDA representations. The original
 [Apriori paper](https://www.vldb.org/conf/1994/P487.PDF) supplies the search and
 subset-pruning foundation, rather than the GPU execution design.
+
+### clApriori (OpenCL)
+
+Experimental local OpenCL translation of cuPAMI's CUDA Apriori support-counting
+kernels. Apriori pruning and the GPApriori complete-intersection/block-reduction
+references above apply. Original CUDA bitset source is cuda_pami, revision
+2ed352a, GPL-3.0-or-later; the OpenCL port is by Mithun Thangaraj under Professor
+Rage Uday Kiran. The port uses bulk GPU bitset construction, native OpenCL
+popcount, local-memory reductions, 32-bit atomic OR, and device-aware power-of-two
+work-groups. It does not implement a new mining-paper algorithm or use CUDA.
+
+[PyOpenCL](https://documen.tician.de/pyopencl/) supplies GPU context, buffer,
+compilation and kernel-launch APIs. Devices are restricted to OpenCL GPUs;
+AMD is preferred when available and explicit vendor filters are enforced.
+Correctness has been tested on NVIDIA OpenCL; AMD execution and performance
+remain unverified until tested on supported AMD hardware and drivers.
 
 ### cuEclat
 
@@ -86,10 +101,39 @@ Kazuo Goda, **A Novel GPU-Accelerated Algorithm to Discover Periodic-Frequent
 Patterns in Temporal Databases**, IEEE Big Data 2022, pp. 121–126,
 DOI: [10.1109/BigData55660.2022.10020216](https://doi.org/10.1109/BigData55660.2022.10020216).
 [PAMI cuGPFMiner](https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/periodicFrequentPattern/cuda/cuGPFMiner.py)
-references this work. That paper's flattened temporal-array representation
-is distinct from cuPAMI's row bitsets; these miners do not claim to reproduce it.
+references this work. The paper's flattened array contains packed item bitsets.
+The timestamp-indexed layout differs from the row-based representation above
+when timestamps are irregular; a contiguous 2D array can use the same flat
+memory layout as a 1D array.
 The [JSS 2016 paper](https://www.tkl.iis.u-tokyo.ac.jp/new/uploads/publication_file/file/744/5-8-2015_final.pdf)
 defines the periodic-frequent model and boundary gaps.
+
+### gPF-Miner (`gPFMiner`)
+
+Paper: Sreepada Tarun, Rage Uday Kiran, Yutaka Watanobe and Kazuo Goda,
+“A Novel GPU-Accelerated Algorithm to Discover Periodic-Frequent Patterns in
+Temporal Databases”, IEEE Big Data 2022, pp. 121–126,
+DOI: [10.1109/BigData55660.2022.10020216](https://doi.org/10.1109/BigData55660.2022.10020216).
+
+This implementation adapts the public timestamp-bitset sources
+[PAMI cuGPFMiner](https://github.com/UdayLab/PAMI/blob/2d4e7bcc2879bec8c12473e8fb82b0ac22aa3918/PAMI/periodicFrequentPattern/cuda/cuGPFMiner.py)
+and [PAMI gPFMinerBit](https://github.com/UdayLab/PAMI/blob/48d0c25fb5f1e4ff32e797fa00873033921f1aa7/PAMI/periodicFrequentPattern/cuda/gPFMinerBit.py),
+written by Tarun Sreepada under Professor Rage Uday Kiran, GPL-3.0-or-later,
+Copyright 2021 Rage Uday Kiran. The paper's Algorithms 1–3 describe singleton
+filtering, packed bitsets, prefix expansion and per-candidate GPU support/period
+evaluation, matching the core structure of these public implementations. This
+port uses lexical item ordering instead of Algorithm 1's support-descending ranks.
+
+The port retains flattened singleton timestamp bitsets, complete-key intersections,
+GPU support/period evaluation, and prefix search. Local changes use CuPy in place
+of PyCUDA, iterative depth-first frames, bounded candidate batches, set-bit scans,
+and an explicit timeline memory limit. Boundary fixes include timestamp zero,
+word-aligned end timestamps, empty trailing transactions, and retaining the
+maximum interior gap when the end gap is smaller. Equal timestamps are unioned
+so singleton and longer-pattern supports consistently count distinct timestamps.
+Relative support uses the input row count, while fractional periods use the
+observation end, matching cuPAMI's documented threshold conventions. Source
+credits are retained separately from the cuPAMI integration credit.
 
 ## Partial-periodic patterns
 

@@ -1,7 +1,8 @@
 # cuPAMI
 
 [PAMI](https://github.com/UdayLab/PAMI) is the main pattern-mining library.
-cuPAMI is its CUDA version, focused on mining patterns using NVIDIA GPUs.
+cuPAMI focuses on CUDA mining with NVIDIA GPUs. Experimental `clApriori`
+also provides an OpenCL backend for AMD-compatible and other OpenCL GPUs.
 This repository is under development.
 
 ## Quick start
@@ -26,7 +27,8 @@ lengths vary. This generates 10000 transactions and finds patterns appearing in 
 
 Replace `cuApriori` with `cuEclat` or `cuFPGrowth` to use another algorithm.
 See [quickstart.ipynb](quickstart.ipynb) for a runnable example of all three.
-Mining requires CuPy and a CUDA GPU.
+CUDA mining requires CuPy and an NVIDIA GPU. For AMD-compatible OpenCL
+GPUs, see [clApriori](docs/algorithms/clApriori.md). AMD performance is not yet validated.
 
 ## Timing
 
@@ -47,6 +49,8 @@ are excluded. `getRuntime()` remains the mining-time shorthand.
 
 ## GPU loading and mining
 
+![OpenCL alternative and NVIDIA CUDA readiness checks with True and False branches](docs/figures/gpu-setup.svg)
+
 ![cuPAMI storage-to-GPU loading paths and mining pipeline](docs/figures/gpu-pipeline.svg)
 
 [Loading formats and GDS details](docs/transaction-formats.md#gpu-loading-and-mining)
@@ -57,8 +61,8 @@ See the [individual algorithm guides](docs/algorithms/README.md) for inputs, par
 
 | Data | Algorithms | Parameters |
 |---|---|---|
-| Binary transactional | `cuApriori`, `cuEclat`, `cuFPGrowth` | `minSup` |
-| Temporal | `cuPFApriori`, `cuPFEclat`, `cuPFGrowth` | `minSup`, `maxPer` |
+| Binary transactional | `cuApriori`, `cuEclat`, `cuFPGrowth`, `clApriori` (OpenCL) | `minSup` |
+| Temporal | `cuPFApriori`, `cuPFEclat`, `cuPFGrowth`, `gPFMiner` | `minSup`, `maxPer` |
 | Partial-periodic temporal | `cuPPPApriori`, `cuPPPEclat` | `minPS`, `period` |
 | Fuzzy CSV | `cuFFIMiner`, `cuMFFIMiner`, `cuMultiFuzzyBaseline` | `minSup` |
 | Spatial CSV + neighbour CSV | `cuSpatialEclat` | `minSup` |
@@ -236,6 +240,7 @@ includes its CUDA references in its module docstring.
 |---|---|
 | `cuApriori` | GPApriori, CLUSTER 2011, Section IV; PAMI cuApriori/cuAprioriBit; Apriori [1] |
 | `cuPFApriori`, `cuPFEclat`, `cuPFGrowth` | PAMI gPFMinerBit; related gPF-Miner, IEEE Big Data 2022; periodic model [5] |
+| `gPFMiner` (gPF-Miner, public bitset variant) | Tarun et al., IEEE Big Data 2022; [paper](https://doi.org/10.1109/BigData55660.2022.10020216); [implementation notes](docs/algorithms/gPFMiner.md) |
 | `cuEclat` | PAMI cuEclatBit; gpuDCI GPU intersections, PDP 2012; Eclat [2, 3] |
 | `cuFPGrowth` | Arour and Belkahla, CIT 2014, Section 5.3; FP-growth [4] |
 | `cuPPPApriori`, `cuPPPEclat` | PAMI gPPMiner GPU scan; PPP_ECLAT API and consecutive-gap semantics |
@@ -328,6 +333,12 @@ miners add maximum-gap checks, including the start and end gaps.
 | [cuEclat](notebooks/frequentPattern/cuEclat.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/frequentPattern/cuEclat.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 | [cuFPGrowth](notebooks/frequentPattern/cuFPGrowth.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/frequentPattern/cuFPGrowth.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 
+#### 1.2. OpenCL frequent pattern mining (experimental)
+
+| OpenCL (AMD-compatible GPU runtime required; AMD performance unverified) |
+|---|
+| [clApriori](notebooks/frequentPattern/clApriori.ipynb) <a href="https://colab.research.google.com/github/UdayLab/cuPAMI/blob/main/notebooks/frequentPattern/clApriori.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
+
 ### 2. Pattern mining in binary temporal databases
 
 #### 2.1. Periodic frequent pattern mining
@@ -336,6 +347,7 @@ miners add maximum-gap checks, including the start and end gaps.
 |---|
 | [cuPFApriori](notebooks/periodicFrequentPattern/cuPFApriori.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/periodicFrequentPattern/cuPFApriori.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 | [cuPFEclat](notebooks/periodicFrequentPattern/cuPFEclat.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/periodicFrequentPattern/cuPFEclat.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
+| [gPF-Miner](notebooks/periodicFrequentPattern/gPFMiner.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/periodicFrequentPattern/gPFMiner.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 | [cuPFGrowth](notebooks/periodicFrequentPattern/cuPFGrowth.ipynb) <a href="https://colab.research.google.com/github/udayRage/cuPAMI/blob/main/notebooks/periodicFrequentPattern/cuPFGrowth.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 
 #### 2.2. Partial periodic pattern mining

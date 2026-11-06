@@ -349,6 +349,13 @@ patterns = miner.getPatterns()
 
 ## GPU loading and mining
 
+`clApriori` is an experimental OpenCL alternative for AMD-compatible and other
+OpenCL GPUs. It uses the CPU readers for CSV, BIN, Parquet and transaction rows,
+then builds bitsets and counts supports on the selected OpenCL GPU. It does not
+use CuPy, CUDA, GDS or automatic CPU fallback. See the
+[OpenCL guide](algorithms/clApriori.md) for setup and current validation limits.
+The CUDA loading paths below apply to the CUDA miners.
+
 CSV and Parquet input default to `use_gpu_io="auto"`. When cuDF and CUDA are
 available, the loader parses and expands transactions on the GPU using the
 load/split/explode approach from
