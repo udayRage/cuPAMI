@@ -33,6 +33,7 @@ setuptools.setup(
         'fastparquet',
     ],
     extras_require={
+        'opencl': ['pyopencl>=2024.1'],
         'gpu':  ['cupy', 'pycuda'],
         'spark': ['pyspark'],
         'dev': ['twine', 'setuptools', 'build'],
